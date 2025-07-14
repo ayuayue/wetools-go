@@ -10,14 +10,19 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+//go:embed build/appicon.png
+var icon []byte
+var version = "0.0.1"
+var gaMeasurementID, gaSecretKey string
 
+const appName = "WeTools"
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-
+	
 	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "wetools-go",
+		Title:  appName,
 		Width:  1024,
 		Height: 768,
 		AssetServer: &assetserver.Options{
