@@ -82,15 +82,16 @@ const isActive = (item) => {
 
 <style scoped>
 .sidebar {
-  width: 250px;
+  width: 160px;
   background: white;
   border-right: 1px solid #e1e5e9;
-  padding: 1rem 0;
+  padding: 0.5rem 0;
   overflow-y: auto;
+  font-size: 0.75rem;
 }
 
 .sidebar-category {
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .category-header {
@@ -99,10 +100,10 @@ const isActive = (item) => {
 }
 
 .category-header h3 {
-  padding: 0.5rem 1.5rem;
-  font-size: 0.9rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: #666;
   display: flex;
   justify-content: space-between;
@@ -110,17 +111,18 @@ const isActive = (item) => {
 }
 
 .collapse-icon {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   transition: transform 0.2s;
 }
 
 .sidebar-item {
   display: block;
-  padding: 0.75rem 1.5rem 0.75rem 2.5rem;
+  padding: 0.4rem 0.75rem 0.4rem 1.5rem;
   color: #333;
   text-decoration: none;
   transition: all 0.2s;
-  border-left: 3px solid transparent;
+  border-left: 2px solid transparent;
+  font-size: 0.75rem;
 }
 
 .sidebar-item:hover {
@@ -136,6 +138,38 @@ const isActive = (item) => {
 
 .category-items {
   transition: all 0.3s ease;
+}
+
+/* 收起的菜单样式 */
+.sidebar.collapsed {
+  width: 40px;
+}
+
+.sidebar.collapsed .category-header h3 span,
+.sidebar.collapsed .sidebar-item span {
+  display: none;
+}
+
+.sidebar.collapsed .category-header {
+  justify-content: center;
+}
+
+.sidebar.collapsed .category-header h3 {
+  padding: 0.3rem;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .category-header h3 i:first-child,
+.sidebar.collapsed .sidebar-item i {
+  margin-right: 0;
+}
+
+/* 确保收起时完全隐藏文字 */
+.sidebar.collapsed .category-header h3,
+.sidebar.collapsed .sidebar-item {
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {

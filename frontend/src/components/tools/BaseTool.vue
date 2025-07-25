@@ -24,6 +24,7 @@
         :language="outputLanguage"
         :show-line-numbers="true"
         :auto-detect="true"
+        :show-header="true"
       />
     </div>
   </div>

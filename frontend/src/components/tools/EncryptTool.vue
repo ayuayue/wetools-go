@@ -40,12 +40,8 @@
         :code="outputData" 
         language="text"
         :show-line-numbers="true"
+        :show-header="true"
       />
-      <div class="result-footer" v-if="outputData && !isValidationResult">
-        <button class="copy-btn" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </button>
-      </div>
     </div>
   </div>
 
@@ -152,6 +148,13 @@ init()
   margin-bottom: 2rem;
 }
 
+/* 暗色主题 */
+.dark-theme .tool-container {
+  background: #2d2d2d;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  color: #e0e0e0;
+}
+
 .tool-section {
   margin-bottom: 1.5rem;
 }
@@ -166,6 +169,11 @@ init()
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 暗色主题 */
+.dark-theme .tool-section h3 {
+  color: #e0e0e0;
 }
 
 .result-header {
@@ -188,6 +196,8 @@ textarea, input {
   font-size: 14px;
   resize: vertical;
   transition: border-color 0.2s;
+  background: white;
+  color: #333;
 }
 
 textarea {
@@ -198,6 +208,18 @@ textarea:focus, input:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* 暗色主题 */
+.dark-theme textarea, .dark-theme input {
+  background: #3d3d3d;
+  border: 1px solid #555;
+  color: #e0e0e0;
+}
+
+.dark-theme textarea:focus, .dark-theme input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
 }
 
 .button-group {
@@ -242,6 +264,33 @@ button.secondary:hover {
 
 .copy-btn:hover {
   background: #22c55e;
+}
+
+/* 暗色主题 */
+.dark-theme button {
+  background: #5a6fd8;
+  color: #e0e0e0;
+}
+
+.dark-theme button:hover {
+  background: #4a5fc8;
+}
+
+.dark-theme button.secondary {
+  background: #3d3d3d;
+  color: #e0e0e0;
+}
+
+.dark-theme button.secondary:hover {
+  background: #4d4d4d;
+}
+
+.dark-theme .copy-btn {
+  background: #22c55e;
+}
+
+.dark-theme .copy-btn:hover {
+  background: #16a34a;
 }
 
 .result {

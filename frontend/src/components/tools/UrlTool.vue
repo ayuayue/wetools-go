@@ -34,12 +34,8 @@
         :code="outputData" 
         language="text"
         :show-line-numbers="true"
+        :show-header="true"
       />
-      <div class="result-footer" v-if="outputData && !isValidationResult">
-        <button class="copy-btn" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </button>
-      </div>
     </div>
   </div>
 

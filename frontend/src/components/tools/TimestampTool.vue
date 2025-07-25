@@ -234,6 +234,13 @@ onUnmounted(() => {
   margin-bottom: 2rem;
 }
 
+/* 暗色主题 */
+.dark-theme .tool-container {
+  background: #2d2d2d;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  color: #e0e0e0;
+}
+
 .tool-section {
   margin-bottom: 1.5rem;
 }
@@ -248,6 +255,11 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 暗色主题 */
+.dark-theme .tool-section h3 {
+  color: #e0e0e0;
 }
 
 .current-time {
@@ -302,6 +314,8 @@ onUnmounted(() => {
   font-family: 'Consolas', 'Monaco', monospace;
   font-size: 14px;
   transition: border-color 0.2s;
+  background: white;
+  color: #333;
 }
 
 .converter-row input:focus,
@@ -309,6 +323,20 @@ onUnmounted(() => {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+/* 暗色主题 */
+.dark-theme .converter-row input,
+.dark-theme .converter-row select {
+  background: #3d3d3d;
+  border: 1px solid #555;
+  color: #e0e0e0;
+}
+
+.dark-theme .converter-row input:focus,
+.dark-theme .converter-row select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
 }
 
 .button-group {
@@ -345,6 +373,25 @@ button.secondary:hover {
   background: #e2e8f0;
 }
 
+/* 暗色主题 */
+.dark-theme button {
+  background: #5a6fd8;
+  color: #e0e0e0;
+}
+
+.dark-theme button:hover {
+  background: #4a5fc8;
+}
+
+.dark-theme button.secondary {
+  background: #3d3d3d;
+  color: #e0e0e0;
+}
+
+.dark-theme button.secondary:hover {
+  background: #4d4d4d;
+}
+
 .result-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -352,6 +399,11 @@ button.secondary:hover {
   background: #f8fafc;
   padding: 1rem;
   border-radius: 4px;
+}
+
+/* 暗色主题 */
+.dark-theme .result-grid {
+  background: #3d3d3d;
 }
 
 .result-item {
@@ -371,6 +423,15 @@ button.secondary:hover {
   font-size: 1rem;
   color: #444;
   word-break: break-all;
+}
+
+/* 暗色主题 */
+.dark-theme .result-item label {
+  color: #a0aec0;
+}
+
+.dark-theme .result-item span {
+  color: #e0e0e0;
 }
 
 .description-list {
@@ -393,5 +454,4 @@ button.secondary:hover {
     grid-template-columns: 1fr;
   }
 }
-</style>
 </style>

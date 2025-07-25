@@ -1,6 +1,6 @@
 <template>
-  <div class="code-block-container">
-    <div class="code-block-header" v-if="showHeader">
+  <div class="code-block-container" :data-theme="theme">
+    <div class="code-block-header" :data-theme="theme" v-if="showHeader">
       <div class="language-info">{{ displayLanguage }}</div>
       <div class="actions">
         <button class="copy-btn" @click="copyCode">
@@ -22,6 +22,7 @@
 <script setup>
 import { ref, onMounted, onUpdated, computed, watch } from 'vue'
 import Prism from 'prismjs'
+import 'prismjs/themes/prism.css'
 import 'prismjs/themes/prism-tomorrow.css'
 import 'prismjs/plugins/line-numbers/prism-line-numbers.css'
 import 'prismjs/plugins/line-numbers/prism-line-numbers'
@@ -46,6 +47,10 @@ const props = defineProps({
   autoDetect: {
     type: Boolean,
     default: true
+  },
+  theme: {
+    type: String,
+    default: 'light'
   }
 })
 
@@ -175,17 +180,30 @@ watch(() => props.language, () => {
 .code-block-container {
   border-radius: 4px;
   overflow: hidden;
-  background: #2d3748;
+  background: #f8fafc;
   margin: 10px 0;
+  border: 1px solid #e2e8f0;
+}
+
+/* 暗色主题 */
+.code-block-container[data-theme="dark"] {
+  background: #2d3748;
+  border: 1px solid #4a5568;
 }
 
 .code-block-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #4a5568;
+  background: #f1f5f9;
   padding: 8px 12px;
   font-size: 12px;
+  color: #64748b;
+}
+
+/* 暗色主题 */
+.code-block-header[data-theme="dark"] {
+  background: #4a5568;
   color: #e2e8f0;
 }
 
@@ -275,5 +293,69 @@ pre.line-numbers > code {
   padding-right: 0.8em;
   text-align: right;
 }
-</style>
+
+/* Prism主题切换样式 */
+.code-block-container[data-theme="light"] pre[class*="language-"] {
+  /* 使用Prism默认亮色主题 */
+}
+
+.code-block-container[data-theme="dark"] pre[class*="language-"] {
+  /* 使用Prism暗色主题 */
+  background: #2d3748 !important;
+  color: #e2e8f0 !important;
+}
+
+.code-block-container[data-theme="dark"] .token.comment,
+.code-block-container[data-theme="dark"] .token.prolog,
+.code-block-container[data-theme="dark"] .token.doctype,
+.code-block-container[data-theme="dark"] .token.cdata {
+  color: #88c0d0 !important;
+}
+
+.code-block-container[data-theme="dark"] .token.punctuation {
+  color: #eceff4 !important;
+}
+
+.code-block-container[data-theme="dark"] .token.property,
+.code-block-container[data-theme="dark"] .token.tag,
+.code-block-container[data-theme="dark"] .token.boolean,
+.code-block-container[data-theme="dark"] .token.number,
+.code-block-container[data-theme="dark"] .token.constant,
+.code-block-container[data-theme="dark"] .token.symbol,
+.code-block-container[data-theme="dark"] .token.deleted {
+  color: #b48ead !important;
+}
+
+.code-block-container[data-theme="dark"] .token.selector,
+.code-block-container[data-theme="dark"] .token.attr-name,
+.code-block-container[data-theme="dark"] .token.string,
+.code-block-container[data-theme="dark"] .token.char,
+.code-block-container[data-theme="dark"] .token.builtin,
+.code-block-container[data-theme="dark"] .token.inserted {
+  color: #a3be8c !important;
+}
+
+.code-block-container[data-theme="dark"] .token.operator,
+.code-block-container[data-theme="dark"] .token.entity,
+.code-block-container[data-theme="dark"] .token.url,
+.code-block-container[data-theme="dark"] .language-css .token.string,
+.code-block-container[data-theme="dark"] .style .token.string {
+  color: #81a1c1 !important;
+}
+
+.code-block-container[data-theme="dark"] .token.atrule,
+.code-block-container[data-theme="dark"] .token.attr-value,
+.code-block-container[data-theme="dark"] .token.keyword {
+  color: #81a1c1 !important;
+}
+
+.code-block-container[data-theme="dark"] .token.function {
+  color: #8fbcbb !important;
+}
+
+.code-block-container[data-theme="dark"] .token.regex,
+.code-block-container[data-theme="dark"] .token.important,
+.code-block-container[data-theme="dark"] .token.variable {
+  color: #8fbcbb !important;
+}
 </style>

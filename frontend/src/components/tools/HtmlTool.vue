@@ -37,12 +37,8 @@
         :code="outputData" 
         language="html"
         :show-line-numbers="true"
+        :show-header="true"
       />
-      <div class="result-footer" v-if="outputData && !isValidationResult">
-        <button class="copy-btn" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </button>
-      </div>
     </div>
   </div>
 
@@ -194,6 +190,13 @@ init()
   margin-bottom: 2rem;
 }
 
+/* 暗色主题 */
+.dark-theme .tool-container {
+  background: #2d2d2d;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+  color: #e0e0e0;
+}
+
 .tool-section {
   margin-bottom: 1.5rem;
 }
@@ -208,6 +211,11 @@ init()
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 暗色主题 */
+.dark-theme .tool-section h3 {
+  color: #e0e0e0;
 }
 
 .result-header {
