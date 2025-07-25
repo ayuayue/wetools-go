@@ -1,5 +1,16 @@
 {
+  "name": "wetools-go",
+  "version": "1.0.0",
+  "description": "WeTools 开发者工具箱",
+  "main": "main.js",
+  "scripts": {
+    "dev": "wails dev",
+    "build": "wails build",
+    "clean": "wails clean"
+  },
   "dependencies": {
-    "qrcode": "^1.5.4"
+    "prismjs": "^1.30.0",
+    "qrcode": "^1.5.4",
+    "vue": "^3.5.13"
   }
 }

@@ -8,12 +8,36 @@
       ></textarea>
     </div>
 
+    <!-- 文件上传区域 -->
+    <div class="tool-section">
+      <h3><i class="fas fa-file-upload"></i> 文件上传</h3>
+      <div class="file-upload-area" @dragover.prevent @drop.prevent="handleFileDrop">
+        <input 
+          type="file" 
+          ref="fileInput" 
+          @change="handleFileSelect" 
+          style="display: none;"
+        />
+        <div class="upload-content" @click="triggerFileInput">
+          <i class="fas fa-cloud-upload-alt upload-icon"></i>
+          <p>点击选择文件或拖拽文件到此处</p>
+          <p class="file-info" v-if="selectedFile">{{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})</p>
+        </div>
+      </div>
+    </div>
+
     <div class="button-group">
       <button @click="encodeBase64">
         <i class="fas fa-lock"></i> Base64编码
       </button>
       <button @click="decodeBase64">
         <i class="fas fa-unlock"></i> Base64解码
+      </button>
+      <button @click="encodeFileToBase64">
+        <i class="fas fa-file-image"></i> 文件转Base64
+      </button>
+      <button @click="decodeBase64ToFile">
+        <i class="fas fa-file-download"></i> Base64转文件
       </button>
       <button class="copy-btn" @click="copyInput">
         <i class="fas fa-copy"></i> 复制输入
@@ -26,6 +50,9 @@
     <div class="tool-section">
       <div class="result-header">
         <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+      </div>
+      <div v-if="outputImage" class="image-preview">
+        <img :src="outputImage" alt="预览图片" />
       </div>
       <div class="result">{{ outputData }}</div>
       <div class="result-footer" v-if="outputData && !isValidationResult">
@@ -43,6 +70,8 @@
       <ul class="description-list">
         <li>将文本或二进制数据编码为Base64格式</li>
         <li>将Base64编码的数据解码为原始内容</li>
+        <li>支持文件转Base64和Base64转文件</li>
+        <li>支持图片预览功能</li>
         <li>支持中文、英文、特殊字符等各类内容</li>
       </ul>
     </div>
@@ -54,6 +83,9 @@ import { ref, computed } from 'vue'
 
 const inputData = ref('')
 const outputData = ref('')
+const selectedFile = ref(null)
+const outputImage = ref('')
+const fileInput = ref(null)
 
 // 判断是否为校验结果（不显示复制按钮）
 const isValidationResult = computed(() => {
@@ -64,8 +96,15 @@ const isValidationResult = computed(() => {
 const encodeBase64 = () => {
   try {
     outputData.value = btoa(unescape(encodeURIComponent(inputData.value)))
+    // 如果是图片Base64，显示预览
+    if (outputData.value.startsWith('data:image')) {
+      outputImage.value = outputData.value
+    } else {
+      outputImage.value = ''
+    }
   } catch (e) {
     outputData.value = '编码错误: ' + e.message
+    outputImage.value = ''
   }
 }
 
@@ -73,9 +112,79 @@ const encodeBase64 = () => {
 const decodeBase64 = () => {
   try {
     outputData.value = decodeURIComponent(escape(atob(inputData.value)))
+    outputImage.value = ''
   } catch (e) {
     outputData.value = '解码错误: ' + e.message
+    outputImage.value = ''
   }
+}
+
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+// 处理文件选择
+const handleFileSelect = (event) => {
+  const file = event.target.files[0]
+  if (file) {
+    selectedFile.value = file
+  }
+}
+
+// 处理文件拖拽
+const handleFileDrop = (event) => {
+  const file = event.dataTransfer.files[0]
+  if (file) {
+    selectedFile.value = file
+    fileInput.value.files = event.dataTransfer.files
+  }
+}
+
+// 文件转Base64
+const encodeFileToBase64 = () => {
+  if (!selectedFile.value) {
+    outputData.value = '请先选择文件'
+    return
+  }
+
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    outputData.value = e.target.result
+    // 如果是图片文件，显示预览
+    if (selectedFile.value.type.startsWith('image/')) {
+      outputImage.value = e.target.result
+    } else {
+      outputImage.value = ''
+    }
+  }
+  reader.onerror = () => {
+    outputData.value = '文件读取错误'
+    outputImage.value = ''
+  }
+  reader.readAsDataURL(selectedFile.value)
+}
+
+// Base64转文件
+const decodeBase64ToFile = () => {
+  try {
+    // 创建下载链接
+    const link = document.createElement('a')
+    link.href = inputData.value
+    link.download = selectedFile.value ? selectedFile.value.name : 'download'
+    link.click()
+  } catch (e) {
+    outputData.value = '文件下载错误: ' + e.message
+  }
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // 清空数据
@@ -146,6 +255,52 @@ init()
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 文件上传区域样式 */
+.file-upload-area {
+  border: 2px dashed #cbd5e1;
+  border-radius: 4px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background: #f8fafc;
+}
+
+.file-upload-area:hover {
+  border-color: #667eea;
+}
+
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  color: #94a3b8;
+}
+
+.file-info {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+}
+
+/* 图片预览样式 */
+.image-preview {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .result-header {
@@ -261,6 +416,10 @@ button.secondary:hover {
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
+  }
+  
+  .file-upload-area {
+    padding: 1rem;
   }
 }
 </style>

@@ -43,7 +43,11 @@
       <div class="result-header">
         <h3><i class="fas fa-file-alt"></i> 转换结果</h3>
       </div>
-      <div class="result">{{ outputData }}</div>
+      <CodeBlock 
+        :code="outputData" 
+        :language="targetFormat"
+        :show-line-numbers="true"
+      />
       <div class="result-footer" v-if="outputData && !isValidationResult">
         <button class="copy-btn" @click="copyResult">
           <i class="fas fa-copy"></i> 复制结果
@@ -69,6 +73,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import CodeBlock from '../CodeBlock.vue'
 
 const sourceFormat = ref('json')
 const targetFormat = ref('xml')

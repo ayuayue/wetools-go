@@ -12,13 +12,6 @@
       <button @click="processData">
         <i class="fas fa-magic"></i> 处理
       </button>
-      <button 
-        v-if="outputData && !isValidationResult" 
-        class="copy-btn" 
-        @click="copyResult"
-      >
-        <i class="fas fa-copy"></i> {{ copyButtonText }}
-      </button>
       <button class="secondary" @click="clearData">
         <i class="fas fa-trash"></i> 清空
       </button>
@@ -26,7 +19,12 @@
 
     <div class="tool-section">
       <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
-      <div class="result">{{ outputData }}</div>
+      <CodeBlock 
+        :code="outputData" 
+        :language="outputLanguage"
+        :show-line-numbers="true"
+        :auto-detect="true"
+      />
     </div>
   </div>
 
@@ -40,10 +38,11 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import CodeBlock from '../CodeBlock.vue'
 
 const inputData = ref('')
 const outputData = ref('')
-const copyButtonText = ref('复制')
+const outputLanguage = ref('auto')
 
 // 判断是否为校验结果（不显示复制按钮）
 const isValidationResult = computed(() => {

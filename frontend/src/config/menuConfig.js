@@ -61,6 +61,13 @@ export const menuItems = [
         type: 'encrypt',
         icon: 'fas fa-key',
         description: 'AES、DES等对称加密算法工具'
+      },
+      {
+        id: 'jwt',
+        title: 'JWT编解码',
+        type: 'jwt',
+        icon: 'fas fa-key',
+        description: 'JWT Token编解码工具，支持Header、Payload、Signature查看'
       }
     ]
   },
@@ -105,6 +112,20 @@ export const menuItems = [
         type: 'qr',
         icon: 'fas fa-qrcode',
         description: '二维码生成与解析工具'
+      },
+      {
+        id: 'timestamp',
+        title: '时间戳转换',
+        type: 'timestamp',
+        icon: 'fas fa-clock',
+        description: '时间戳与标准时间互转工具，支持多种时间格式'
+      },
+      {
+        id: 'text',
+        title: '文本处理',
+        type: 'text',
+        icon: 'fas fa-font',
+        description: '文本格式化、大小写转换、繁简转换等工具'
       }
     ]
   }

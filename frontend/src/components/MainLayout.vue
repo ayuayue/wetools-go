@@ -47,6 +47,9 @@ import RandomTool from './tools/RandomTool.vue'
 import UuidTool from './tools/UuidTool.vue'
 import ConverterTool from './tools/ConverterTool.vue'
 import QrTool from './tools/QrTool.vue'
+import JwtTool from './tools/JwtTool.vue'
+import TimestampTool from './tools/TimestampTool.vue'
+import TextTool from './tools/TextTool.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 创建响应式菜单数据
@@ -64,7 +67,10 @@ const toolComponents = {
   random: RandomTool,
   uuid: UuidTool,
   converter: ConverterTool,
-  qr: QrTool
+  qr: QrTool,
+  jwt: JwtTool,
+  timestamp: TimestampTool,
+  text: TextTool
 }
 
 // 当前选中的工具

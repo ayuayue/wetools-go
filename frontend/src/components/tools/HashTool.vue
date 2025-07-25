@@ -18,6 +18,12 @@
       <button @click="calculateSHA256">
         <i class="fas fa-calculator"></i> SHA256
       </button>
+      <button @click="convertToUpper">
+        <i class="fas fa-text-height"></i> 转大写
+      </button>
+      <button @click="convertToLower">
+        <i class="fas fa-text-width"></i> 转小写
+      </button>
       <button class="copy-btn" @click="copyInput">
         <i class="fas fa-copy"></i> 复制输入
       </button>
@@ -30,7 +36,11 @@
       <div class="result-header">
         <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
       </div>
-      <div class="result">{{ outputData }}</div>
+      <CodeBlock 
+        :code="outputData" 
+        language="text"
+        :show-line-numbers="true"
+      />
       <div class="result-footer" v-if="outputData && !isValidationResult">
         <button class="copy-btn" @click="copyResult">
           <i class="fas fa-copy"></i> 复制结果
@@ -55,6 +65,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import CodeBlock from '../CodeBlock.vue'
 
 const inputData = ref('')
 const outputData = ref('')
@@ -104,6 +115,16 @@ const calculateSHA256 = () => {
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
+}
+
+// 转大写
+const convertToUpper = () => {
+  outputData.value = outputData.value.toUpperCase()
+}
+
+// 转小写
+const convertToLower = () => {
+  outputData.value = outputData.value.toLowerCase()
 }
 
 // 复制输入内容
