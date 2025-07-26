@@ -1,5 +1,5 @@
 <template>
-  <div class="sidebar">
+  <div class="sidebar" :class="{ 'collapsed': isCollapsed }">
     <div 
       v-for="category in menuItems" 
       :key="category.id" 
@@ -10,8 +10,10 @@
         @click="toggleCategory(category)"
       >
         <h3>
-          <i :class="category.icon"></i> {{ category.title }}
+          <i :class="category.icon"></i>
+          <span v-if="!isCollapsed">{{ category.title }}</span>
           <i 
+            v-if="!isCollapsed"
             :class="[
               'collapse-icon', 
               'fas', 
@@ -22,18 +24,25 @@
       </div>
       
       <div 
-        v-show="!category.collapsed" 
+        v-show="!category.collapsed && !isCollapsed" 
         class="category-items"
       >
-        <a
-          v-for="item in category.items"
-          :key="item.id"
-          href="#"
-          :class="['sidebar-item', { active: isActive(item) }]"
-          @click="handleItemClick(item, $event)"
+        <el-menu
+          :default-active="activeItem?.id"
+          class="sidebar-menu"
+          :collapse="isCollapsed"
         >
-          <i :class="item.icon"></i> {{ item.title }}
-        </a>
+          <el-menu-item
+            v-for="item in category.items"
+            :key="item.id"
+            :index="item.id"
+            :class="['sidebar-item', { active: isActive(item) }]"
+            @click="handleItemClick(item)"
+          >
+            <i :class="item.icon"></i>
+            <span>{{ item.title }}</span>
+          </el-menu-item>
+        </el-menu>
       </div>
     </div>
   </div>
@@ -41,11 +50,16 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { ElMenuItem, ElMenu } from 'element-plus'
 
 const props = defineProps({
   menuItems: {
     type: Array,
     required: true
+  },
+  isCollapsed: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -64,9 +78,7 @@ const toggleCategory = (category) => {
 }
 
 // 处理菜单项点击
-const handleItemClick = (item, event) => {
-  event.preventDefault()
-  
+const handleItemClick = (item) => {
   // 更新激活状态
   activeItem.value = item
   
@@ -89,10 +101,36 @@ const isActive = (item) => {
   overflow-y: auto;
   font-size: 0.875rem; /* 14px */
   transition: all 0.3s ease;
+  min-height: 100%;
+  height: 100%;
+  flex: 1;
+}
+
+/* 暗色主题下的侧边栏 */
+.dark-theme .sidebar {
+  background: #2d2d2d;
+  border-right: 1px solid #444;
+}
+
+/* 暗色主题下的菜单项 */
+.dark-theme .sidebar-item {
+  color: #e0e0e0;
+}
+
+.dark-theme .sidebar-item:hover {
+  background-color: #3d3d3d;
+}
+
+.dark-theme .sidebar-item.active {
+  background-color: #3d3d3d;
+}
+
+.dark-theme .category-header h3 {
+  color: #aaa;
 }
 
 .sidebar-category {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .category-header {
@@ -101,28 +139,39 @@ const isActive = (item) => {
 }
 
 .category-header h3 {
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 0.75rem;
   font-size: 0.875rem; /* 14px */
   color: #666;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
+  margin: 0;
+}
+
+.category-header h3 > i:first-child {
+  margin-right: 0.125rem;
+  font-size: 0.75rem; /* 12px */
 }
 
 .collapse-icon {
-  font-size: 0.6rem;
+  font-size: 0.5rem;
   transition: transform 0.2s;
+  margin-left: auto;
 }
 
 .sidebar-item {
-  display: block;
-  padding: 0.5rem 1rem 0.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem 0.375rem 1.25rem;
   color: #333;
   text-decoration: none;
   transition: all 0.2s;
   border-left: 2px solid transparent;
   font-size: 0.875rem; /* 14px */
+  gap: 0.25rem;
+  margin: 0 0.25rem;
+  border-radius: 2px;
 }
 
 .sidebar-item:hover {
@@ -138,17 +187,63 @@ const isActive = (item) => {
 
 .category-items {
   transition: all 0.3s ease;
+  margin-top: 0.25rem;
+}
+
+/* Element Plus Menu 样式覆盖 */
+.sidebar-menu {
+  border-right: none !important;
+  background: transparent !important;
+}
+
+.sidebar-menu :deep(.el-menu-item) {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem 0.375rem 1.25rem !important;
+  color: #333;
+  text-decoration: none;
+  transition: all 0.2s;
+  border-left: 2px solid transparent;
+  font-size: 0.875rem; /* 14px */
+  gap: 0.25rem;
+  margin: 0 0.25rem;
+  border-radius: 2px;
+  height: auto !important;
+  line-height: 1.5 !important;
+}
+
+.sidebar-menu :deep(.el-menu-item:hover) {
+  background-color: #f8f9fa !important;
+  border-left-color: #667eea;
+}
+
+.sidebar-menu :deep(.el-menu-item.is-active) {
+  background-color: #eef2ff !important;
+  border-left-color: #667eea;
+  font-weight: 500;
+}
+
+/* 暗色主题下的菜单项样式 */
+.dark-theme .sidebar-menu :deep(.el-menu-item) {
+  color: #e0e0e0;
+  background: transparent !important;
+}
+
+.dark-theme .sidebar-menu :deep(.el-menu-item:hover) {
+  background-color: #3d3d3d !important;
+}
+
+.dark-theme .sidebar-menu :deep(.el-menu-item.is-active) {
+  background-color: #3d3d3d !important;
 }
 
 /* 收起的菜单样式 */
 .sidebar.collapsed {
   overflow: hidden;
-  width: 100%;
 }
 
-.sidebar.collapsed .category-header h3 span,
-.sidebar.collapsed .sidebar-item span {
-  display: none !important;
+.sidebar.collapsed .category-header h3 span {
+  display: none;
 }
 
 .sidebar.collapsed .category-header {
@@ -161,17 +256,9 @@ const isActive = (item) => {
   overflow: hidden;
 }
 
-.sidebar.collapsed .category-header h3 i:first-child,
-.sidebar.collapsed .sidebar-item i {
+.sidebar.collapsed .category-header h3 i:first-child {
   margin-right: 0;
-}
-
-/* 确保收起时完全隐藏文字 */
-.sidebar.collapsed .category-header h3,
-.sidebar.collapsed .sidebar-item {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: clip;
+  font-size: 0.875rem; /* 14px */
 }
 
 @media (max-width: 768px) {
