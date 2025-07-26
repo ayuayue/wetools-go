@@ -27,11 +27,7 @@
 
     <!-- Main Content -->
     <el-main class="main-content">
-      <ToolHeader 
-        :title="currentTool.title" 
-        :description="currentTool.description" 
-        :icon="currentTool.icon" 
-      />
+      <ToolHeader />
       
       <component 
         :is="currentTool.component" 
@@ -146,6 +142,7 @@ onMounted(() => {
 .main-layout-container {
   flex: 1;
   min-height: calc(100vh - 120px);
+  overflow: hidden;
 }
 
 .sidebar-container {
@@ -167,7 +164,7 @@ onMounted(() => {
 
 .main-content {
   padding: 2rem;
-  overflow-y: auto;
+  overflow: hidden;
   background-color: #f5f7fa;
 }
 
