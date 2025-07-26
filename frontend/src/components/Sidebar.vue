@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMenuItem, ElMenu, ElSubMenu } from 'element-plus'
 
 const props = defineProps({
@@ -49,7 +49,17 @@ const props = defineProps({
 const emit = defineEmits(['menuItemClick'])
 
 // 当前激活的菜单项
-const activeItem = ref(props.menuItems[0]?.items[0] || null)
+const activeItem = ref(null)
+
+// 当菜单数据加载完成后设置默认激活项
+onMounted(() => {
+  if (props.menuItems && props.menuItems.length > 0) {
+    const firstCategory = props.menuItems[0]
+    if (firstCategory && firstCategory.items && firstCategory.items.length > 0) {
+      activeItem.value = firstCategory.items[0]
+    }
+  }
+})
 
 // 处理菜单选择
 const handleMenuSelect = (index) => {
