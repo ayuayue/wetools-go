@@ -75,51 +75,7 @@
           </el-row>
         </el-tab-pane>
         
-        <el-tab-pane label="Base64编码" name="base64">
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <div class="input-section">
-                <el-input
-                  v-model="base64Input"
-                  type="textarea"
-                  :rows="8"
-                  placeholder="请输入要编码或解码的文本"
-                  resize="vertical"
-                />
-              </div>
-            </el-col>
-          </el-row>
-          
-          <div class="button-group">
-            <el-button type="primary" @click="encodeBase64">
-              <i class="fas fa-lock"></i> Base64编码
-            </el-button>
-            <el-button @click="decodeBase64">
-              <i class="fas fa-unlock"></i> Base64解码
-            </el-button>
-            <el-button @click="clearBase64">
-              <i class="fas fa-trash"></i> 清空
-            </el-button>
-            <el-button type="success" @click="copyBase64Result">
-              <i class="fas fa-copy"></i> 复制结果
-            </el-button>
-          </div>
-          
-          <el-row :gutter="20">
-            <el-col :span="24">
-              <div class="output-section">
-                <el-input
-                  v-model="base64Output"
-                  type="textarea"
-                  :rows="8"
-                  placeholder="编码/解码结果将显示在这里"
-                  resize="vertical"
-                />
-              </div>
-            </el-col>
-          </el-row>
-        </el-tab-pane>
-      </el-tabs>
+              </el-tabs>
       
       <div class="validation-result" v-if="validationResult">
         <el-alert
@@ -143,8 +99,6 @@ const aesInput = ref('')
 const aesKey = ref('')
 const aesIv = ref('')
 const aesOutput = ref('')
-const base64Input = ref('')
-const base64Output = ref('')
 const validationResult = ref(null)
 
 // AES加密
@@ -310,60 +264,6 @@ const clearAES = () => {
   validationResult.value = null
 }
 
-// Base64编码
-const encodeBase64 = () => {
-  try {
-    if (!base64Input.value.trim()) {
-      validationResult.value = {
-        type: 'warning',
-        message: '请输入要编码的文本'
-      }
-      return
-    }
-    
-    base64Output.value = btoa(unescape(encodeURIComponent(base64Input.value)))
-    validationResult.value = {
-      type: 'success',
-      message: 'Base64编码成功！'
-    }
-  } catch (error) {
-    validationResult.value = {
-      type: 'error',
-      message: `Base64编码失败: ${error.message}`
-    }
-  }
-}
-
-// Base64解码
-const decodeBase64 = () => {
-  try {
-    if (!base64Input.value.trim()) {
-      validationResult.value = {
-        type: 'warning',
-        message: '请输入要解码的Base64字符串'
-      }
-      return
-    }
-    
-    base64Output.value = decodeURIComponent(escape(atob(base64Input.value)))
-    validationResult.value = {
-      type: 'success',
-      message: 'Base64解码成功！'
-    }
-  } catch (error) {
-    validationResult.value = {
-      type: 'error',
-      message: `Base64解码失败: ${error.message}`
-    }
-  }
-}
-
-// 清空Base64数据
-const clearBase64 = () => {
-  base64Input.value = ''
-  base64Output.value = ''
-  validationResult.value = null
-}
 
 // 复制AES结果
 const copyAESResult = async () => {
@@ -389,34 +289,10 @@ const copyAESResult = async () => {
   }
 }
 
-// 复制Base64结果
-const copyBase64Result = async () => {
-  if (!base64Output.value) {
-    validationResult.value = {
-      type: 'warning',
-      message: '没有内容可复制'
-    }
-    return
-  }
-  
-  try {
-    await navigator.clipboard.writeText(base64Output.value)
-    validationResult.value = {
-      type: 'success',
-      message: 'Base64结果已复制到剪贴板！'
-    }
-  } catch (error) {
-    validationResult.value = {
-      type: 'error',
-      message: '复制失败，请手动复制'
-    }
-  }
-}
 
 // 初始化示例数据
 aesInput.value = 'Hello, WeTools!'
 aesKey.value = 'my-secret-key-12345'
-base64Input.value = 'Hello, WeTools!'
 </script>
 
 <style scoped>

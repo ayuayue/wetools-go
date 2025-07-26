@@ -82,7 +82,6 @@
           </div>
           
           <div class="qr-result" v-if="qrCodeUrl">
-            <h3>生成的二维码</h3>
             <div class="qr-image-container">
               <img :src="qrCodeUrl" :alt="qrData" />
             </div>
@@ -91,6 +90,15 @@
         
         <el-tab-pane label="解析二维码" name="decode">
           <div class="decode-section">
+            <div class="paste-area">
+              <el-input
+                type="textarea"
+                :rows="3"
+                placeholder="粘贴二维码图片或上传文件"
+                @paste="handlePaste"
+              />
+            </div>
+            
             <div class="file-upload-area">
               <el-upload
                 drag
@@ -232,6 +240,20 @@ const handleQRImageUpload = (file) => {
   qrImageFile.value = file.raw
   decodedData.value = ''
   validationResult.value = null
+}
+
+// 处理粘贴事件
+const handlePaste = (event) => {
+  const items = (event.clipboardData || event.originalEvent.clipboardData).items
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const blob = items[i].getAsFile()
+      qrImageFile.value = blob
+      decodedData.value = ''
+      validationResult.value = null
+      break
+    }
+  }
 }
 
 // 解析二维码
@@ -399,6 +421,11 @@ qrData.value = 'https://example.com'
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.paste-area {
+  width: 100%;
+  margin-bottom: 1rem;
 }
 
 .file-upload-area {
