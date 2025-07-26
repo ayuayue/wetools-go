@@ -1,362 +1,362 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入文本</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入要计算哈希的文本"
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>哈希计算工具</h2>
+      <p>MD5、SHA1、SHA256等哈希算法计算工具</p>
     </div>
-
-    <div class="button-group">
-      <button @click="calculateMD5">
-        <i class="fas fa-calculator"></i> MD5
-      </button>
-      <button @click="calculateSHA1">
-        <i class="fas fa-calculator"></i> SHA1
-      </button>
-      <button @click="calculateSHA256">
-        <i class="fas fa-calculator"></i> SHA256
-      </button>
-      <button @click="convertToUpper">
-        <i class="fas fa-text-height"></i> 转大写
-      </button>
-      <button @click="convertToLower">
-        <i class="fas fa-text-width"></i> 转小写
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="input-section">
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="8"
+              placeholder="请输入要计算哈希值的文本"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="hash-algorithms">
+        <h3>选择哈希算法</h3>
+        <div class="algorithm-buttons">
+          <el-button 
+            v-for="algorithm in algorithms" 
+            :key="algorithm.name"
+            :type="selectedAlgorithm === algorithm.name ? 'primary' : ''"
+            @click="selectAlgorithm(algorithm.name)"
+          >
+            {{ algorithm.name }}
+          </el-button>
+        </div>
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="text"
-        :show-line-numbers="true"
-        :show-header="true"
-        :theme="theme"
-      />
+      
+      <div class="button-group">
+        <el-button type="primary" @click="calculateHash">
+          <i class="fas fa-calculator"></i> 计算哈希值
+        </el-button>
+        <el-button @click="calculateAllHashes">
+          <i class="fas fa-calculator"></i> 计算所有哈希值
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
+      </div>
+      
+      <div class="result-section" v-if="hashResult">
+        <h3>计算结果</h3>
+        <el-input
+          v-model="hashResult"
+          readonly
+          placeholder="哈希计算结果将显示在这里"
+        />
+      </div>
+      
+      <div class="all-results-section" v-if="allHashResults.length > 0">
+        <h3>所有哈希值计算结果</h3>
+        <el-table :data="allHashResults" style="width: 100%" border>
+          <el-table-column prop="algorithm" label="算法" width="120"></el-table-column>
+          <el-table-column prop="hash" label="哈希值"></el-table-column>
+        </el-table>
+      </div>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>哈希计算工具支持多种哈希算法，用于数据完整性校验和密码学应用：</p>
-      <ul class="description-list">
-        <li>MD5：128位哈希算法，广泛用于数据校验</li>
-        <li>SHA1：160位哈希算法，比MD5更安全</li>
-        <li>SHA256：256位哈希算法，安全性更高</li>
-        <li>所有计算均在浏览器端完成，保证数据安全</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed, inject } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert, ElTable, ElTableColumn } from 'element-plus'
 
+// 数据模型
 const inputData = ref('')
-const outputData = ref('')
+const selectedAlgorithm = ref('MD5')
+const hashResult = ref('')
+const allHashResults = ref([])
+const validationResult = ref(null)
 
-// 注入主题
-const theme = inject('theme', ref('light'))
+// 哈希算法列表
+const algorithms = ref([
+  { name: 'MD5', fullName: 'Message-Digest Algorithm 5' },
+  { name: 'SHA1', fullName: 'Secure Hash Algorithm 1' },
+  { name: 'SHA256', fullName: 'Secure Hash Algorithm 256' },
+  { name: 'SHA512', fullName: 'Secure Hash Algorithm 512' }
+])
 
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+// 选择算法
+const selectAlgorithm = (algorithm) => {
+  selectedAlgorithm.value = algorithm
+}
 
-// 计算MD5（简化实现，实际项目中应使用crypto库）
-const calculateMD5 = () => {
+// 计算哈希值
+const calculateHash = async () => {
   try {
-    // 这里使用简单的模拟实现，实际项目中应使用crypto库
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要计算哈希值的文本'
+      }
+      return
+    }
+    
+    // 使用Web Crypto API计算哈希值
     const encoder = new TextEncoder()
     const data = encoder.encode(inputData.value)
-    outputData.value = `MD5(${inputData.value}) = ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('')}`
-  } catch (e) {
-    outputData.value = 'MD5计算错误: ' + e.message
+    let hashBuffer
+    
+    switch (selectedAlgorithm.value) {
+      case 'MD5':
+        // MD5需要使用第三方库或自定义实现，这里简化处理
+        hashResult.value = await calculateMD5(inputData.value)
+        break
+      case 'SHA1':
+        hashBuffer = await crypto.subtle.digest('SHA-1', data)
+        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('').toUpperCase()
+        break
+      case 'SHA256':
+        hashBuffer = await crypto.subtle.digest('SHA-256', data)
+        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('').toUpperCase()
+        break
+      case 'SHA512':
+        hashBuffer = await crypto.subtle.digest('SHA-512', data)
+        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('').toUpperCase()
+        break
+      default:
+        throw new Error('不支持的哈希算法')
+    }
+    
+    allHashResults.value = []
+    validationResult.value = {
+      type: 'success',
+      message: `${selectedAlgorithm.value}哈希值计算成功！`
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `哈希计算失败: ${error.message}`
+    }
   }
 }
 
-// 计算SHA1（简化实现）
-const calculateSHA1 = () => {
+// 计算所有哈希值
+const calculateAllHashes = async () => {
   try {
-    // 这里使用简单的模拟实现，实际项目中应使用crypto库
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要计算哈希值的文本'
+      }
+      return
+    }
+    
+    const results = []
     const encoder = new TextEncoder()
     const data = encoder.encode(inputData.value)
-    outputData.value = `SHA1(${inputData.value}) = ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 40)}`
-  } catch (e) {
-    outputData.value = 'SHA1计算错误: ' + e.message
+    
+    // 计算SHA1
+    const sha1Buffer = await crypto.subtle.digest('SHA-1', data)
+    const sha1Hash = Array.from(new Uint8Array(sha1Buffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').toUpperCase()
+    results.push({ algorithm: 'SHA1', hash: sha1Hash })
+    
+    // 计算SHA256
+    const sha256Buffer = await crypto.subtle.digest('SHA-256', data)
+    const sha256Hash = Array.from(new Uint8Array(sha256Buffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').toUpperCase()
+    results.push({ algorithm: 'SHA256', hash: sha256Hash })
+    
+    // 计算SHA512
+    const sha512Buffer = await crypto.subtle.digest('SHA-512', data)
+    const sha512Hash = Array.from(new Uint8Array(sha512Buffer))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('').toUpperCase()
+    results.push({ algorithm: 'SHA512', hash: sha512Hash })
+    
+    // 计算MD5 (简化实现)
+    const md5Hash = await calculateMD5(inputData.value)
+    results.push({ algorithm: 'MD5', hash: md5Hash })
+    
+    allHashResults.value = results
+    hashResult.value = ''
+    validationResult.value = {
+      type: 'success',
+      message: '所有哈希值计算成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `哈希计算失败: ${error.message}`
+    }
   }
 }
 
-// 计算SHA256（简化实现）
-const calculateSHA256 = () => {
-  try {
-    // 这里使用简单的模拟实现，实际项目中应使用crypto库
-    const encoder = new TextEncoder()
-    const data = encoder.encode(inputData.value)
-    outputData.value = `SHA256(${inputData.value}) = ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 64)}`
-  } catch (e) {
-    outputData.value = 'SHA256计算错误: ' + e.message
-  }
+// 简化的MD5计算函数
+const calculateMD5 = async (str) => {
+  // 使用crypto.subtle.digest计算MD5
+  const encoder = new TextEncoder()
+  const data = encoder.encode(str)
+  const hashBuffer = await crypto.subtle.digest('MD5', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase()
 }
 
 // 清空数据
 const clearData = () => {
   inputData.value = ''
-  outputData.value = ''
-}
-
-// 转大写
-const convertToUpper = () => {
-  outputData.value = outputData.value.toUpperCase()
-}
-
-// 转小写
-const convertToLower = () => {
-  outputData.value = outputData.value.toLowerCase()
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+  hashResult.value = ''
+  allHashResults.value = []
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  const result = hashResult.value || (allHashResults.value.length > 0 ? 
+    allHashResults.value.map(r => `${r.algorithm}: ${r.hash}`).join('\n') : '')
+  
+  if (!result) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
-    await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    await navigator.clipboard.writeText(result)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = 'WeTools 开发者工具箱'
-  calculateMD5()
-}
-
-init()
+// 初始化示例数据
+inputData.value = 'Hello, WeTools!'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-/* 暗色主题 */
-.dark-theme textarea {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.dark-theme textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+.input-section {
+  width: 100%;
+}
+
+.hash-algorithms {
+  width: 100%;
+}
+
+.hash-algorithms h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.algorithm-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.algorithm-buttons .el-button {
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
+.result-section,
+.all-results-section {
+  width: 100%;
 }
 
-button.secondary {
-  background: #f1f5f9;
+.result-section h3,
+.all-results-section h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
+  .algorithm-buttons {
+    flex-direction: column;
+  }
+  
+  .algorithm-buttons .el-button {
+    width: 100%;
+    max-width: none;
+  }
+  
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>

@@ -1,371 +1,432 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-qrcode"></i> 二维码内容</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入要生成二维码的内容（URL、文本等）"
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>二维码生成器</h2>
+      <p>二维码生成与解析工具</p>
     </div>
-
-    <div class="tool-section">
-      <h3><i class="fas fa-sliders-h"></i> 配置选项</h3>
-      <div class="config-group">
-        <label>尺寸:</label>
-        <input 
-          v-model.number="size" 
-          type="range" 
-          min="100" 
-          max="500" 
-          step="50"
-        />
-        <span>{{ size }}px</span>
-      </div>
+    
+    <div class="tool-content">
+      <el-tabs v-model="activeTab" class="tool-tabs">
+        <el-tab-pane label="生成二维码" name="generate">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="input-section">
+                <el-input
+                  v-model="qrData"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="请输入要生成二维码的内容，例如：https://example.com"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="qr-options">
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <div class="option-item">
+                  <el-form-item label="尺寸">
+                    <el-slider
+                      v-model="qrSize"
+                      :min="100"
+                      :max="500"
+                      :step="10"
+                      show-input
+                    />
+                  </el-form-item>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="option-item">
+                  <el-form-item label="纠错级别">
+                    <el-select v-model="qrErrorCorrection">
+                      <el-option label="低 (7%)" value="L"></el-option>
+                      <el-option label="中 (15%)" value="M"></el-option>
+                      <el-option label="高 (25%)" value="Q"></el-option>
+                      <el-option label="最高 (30%)" value="H"></el-option>
+                    </el-select>
+                  </el-form-item>
+                </div>
+              </el-col>
+            </el-row>
+            
+            <el-row :gutter="20">
+              <el-col :span="12">
+                <div class="option-item">
+                  <el-form-item label="前景色">
+                    <el-color-picker v-model="qrForegroundColor" />
+                  </el-form-item>
+                </div>
+              </el-col>
+              <el-col :span="12">
+                <div class="option-item">
+                  <el-form-item label="背景色">
+                    <el-color-picker v-model="qrBackgroundColor" />
+                  </el-form-item>
+                </div>
+              </el-col>
+            </el-row>
+          </div>
+          
+          <div class="button-group">
+            <el-button type="primary" @click="generateQRCode">
+              <i class="fas fa-qrcode"></i> 生成二维码
+            </el-button>
+            <el-button @click="clearQRData">
+              <i class="fas fa-trash"></i> 清空
+            </el-button>
+            <el-button type="success" @click="downloadQRCode">
+              <i class="fas fa-download"></i> 下载二维码
+            </el-button>
+          </div>
+          
+          <div class="qr-result" v-if="qrCodeUrl">
+            <h3>生成的二维码</h3>
+            <div class="qr-image-container">
+              <img :src="qrCodeUrl" :alt="qrData" />
+            </div>
+          </div>
+        </el-tab-pane>
+        
+        <el-tab-pane label="解析二维码" name="decode">
+          <div class="decode-section">
+            <div class="file-upload-area">
+              <el-upload
+                drag
+                :auto-upload="false"
+                :show-file-list="false"
+                :on-change="handleQRImageUpload"
+              >
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div class="el-upload__text">
+                  将二维码图片拖到此处，或<em>点击上传</em>
+                </div>
+                <div class="el-upload__tip" slot="tip">
+                  支持 JPG、PNG 格式的二维码图片
+                </div>
+              </el-upload>
+            </div>
+            
+            <div class="button-group">
+              <el-button type="primary" @click="decodeQRCode" :disabled="!qrImageFile">
+                <i class="fas fa-search"></i> 解析二维码
+              </el-button>
+              <el-button @click="clearDecodeData">
+                <i class="fas fa-trash"></i> 清空
+              </el-button>
+            </div>
+            
+            <div class="decode-result" v-if="decodedData">
+              <h3>解析结果</h3>
+              <el-input
+                v-model="decodedData"
+                type="textarea"
+                :rows="4"
+                readonly
+              />
+              <div class="button-group">
+                <el-button type="success" @click="copyDecodedData">
+                  <i class="fas fa-copy"></i> 复制内容
+                </el-button>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
       
-      <div class="config-group">
-        <label>纠错级别:</label>
-        <select v-model="errorCorrectionLevel">
-          <option value="L">L (7%)</option>
-          <option value="M">M (15%)</option>
-          <option value="Q">Q (25%)</option>
-          <option value="H">H (30%)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="button-group">
-      <button @click="generateQRCode">
-        <i class="fas fa-qrcode"></i> 生成二维码
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-image"></i> 二维码</h3>
-      </div>
-      <div class="qr-code-container">
-        <img 
-          v-if="qrCodeDataUrl" 
-          :src="qrCodeDataUrl" 
-          :style="{ width: size + 'px', height: size + 'px' }"
-          alt="QR Code"
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
         />
-        <div v-else class="qr-placeholder">
-          <i class="fas fa-qrcode"></i>
-          <p>生成二维码后将显示在这里</p>
-        </div>
-      </div>
-      <div class="result-footer" v-if="qrCodeDataUrl">
-        <button class="copy-btn" @click="downloadQRCode">
-          <i class="fas fa-download"></i> 下载二维码
-        </button>
       </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>二维码生成器可以将文本、URL等信息转换为二维码图片：</p>
-      <ul class="description-list">
-        <li>支持自定义尺寸和纠错级别</li>
-        <li>可生成网站链接、文本、联系方式等二维码</li>
-        <li>支持下载二维码图片</li>
-        <li>所有生成操作在浏览器端完成，保证隐私安全</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import QRCode from 'qrcode'
+import { ref } from 'vue'
+import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElFormItem, ElInput, ElSlider, ElSelect, ElOption, ElColorPicker, ElButton, ElAlert, ElUpload } from 'element-plus'
 
-const inputData = ref('')
-const size = ref(200)
-const errorCorrectionLevel = ref('M')
-const qrCodeDataUrl = ref('')
+// 数据模型
+const activeTab = ref('generate')
+const qrData = ref('')
+const qrSize = ref(200)
+const qrErrorCorrection = ref('M')
+const qrForegroundColor = ref('#000000')
+const qrBackgroundColor = ref('#ffffff')
+const qrCodeUrl = ref('')
+const qrImageFile = ref(null)
+const decodedData = ref('')
+const validationResult = ref(null)
 
 // 生成二维码
-const generateQRCode = async () => {
-  if (!inputData.value) {
-    qrCodeDataUrl.value = ''
-    return
-  }
-  
+const generateQRCode = () => {
   try {
-    const dataUrl = await QRCode.toDataURL(inputData.value, {
-      width: size.value,
-      height: size.value,
-      errorCorrectionLevel: errorCorrectionLevel.value,
-      margin: 2,
-      color: {
-        dark: '#000000',
-        light: '#ffffff'
+    if (!qrData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要生成二维码的内容'
       }
-    })
+      return
+    }
     
-    qrCodeDataUrl.value = dataUrl
-  } catch (e) {
-    console.error('生成二维码错误:', e)
-    qrCodeDataUrl.value = ''
+    // 使用在线API生成二维码
+    const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData.value)}&size=${qrSize.value}x${qrSize.value}&ecc=${qrErrorCorrection.value}&color=${qrForegroundColor.value.replace('#', '')}&bgcolor=${qrBackgroundColor.value.replace('#', '')}`
+    qrCodeUrl.value = apiUrl
+    
+    validationResult.value = {
+      type: 'success',
+      message: '二维码生成成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `二维码生成失败: ${error.message}`
+    }
   }
+}
+
+// 清空二维码数据
+const clearQRData = () => {
+  qrData.value = ''
+  qrCodeUrl.value = ''
+  validationResult.value = null
 }
 
 // 下载二维码
 const downloadQRCode = () => {
-  if (!qrCodeDataUrl.value) return
+  if (!qrCodeUrl.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '请先生成二维码'
+    }
+    return
+  }
   
-  const link = document.createElement('a')
-  link.href = qrCodeDataUrl.value
-  link.download = 'qrcode.png'
-  link.click()
+  try {
+    const link = document.createElement('a')
+    link.href = qrCodeUrl.value
+    link.download = 'qrcode.png'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    validationResult.value = {
+      type: 'success',
+      message: '二维码下载成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `二维码下载失败: ${error.message}`
+    }
+  }
 }
 
-// 清空数据
-const clearData = () => {
-  inputData.value = ''
-  qrCodeDataUrl.value = ''
+// 处理二维码图片上传
+const handleQRImageUpload = (file) => {
+  qrImageFile.value = file.raw
+  decodedData.value = ''
+  validationResult.value = null
 }
 
-// 初始化数据
-onMounted(() => {
-  inputData.value = 'https://github.com/yourusername/wetools-go'
-  generateQRCode()
-})
+// 解析二维码
+const decodeQRCode = async () => {
+  if (!qrImageFile.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '请先上传二维码图片'
+    }
+    return
+  }
+  
+  try {
+    // 使用在线API解析二维码
+    const formData = new FormData()
+    formData.append('file', qrImageFile.value)
+    
+    const response = await fetch('https://api.qrserver.com/v1/read-qr-code/', {
+      method: 'POST',
+      body: formData
+    })
+    
+    const result = await response.json()
+    
+    if (result && result[0] && result[0].symbol && result[0].symbol[0]) {
+      if (result[0].symbol[0].data) {
+        decodedData.value = result[0].symbol[0].data
+        validationResult.value = {
+          type: 'success',
+          message: '二维码解析成功！'
+        }
+      } else {
+        validationResult.value = {
+          type: 'warning',
+          message: '未在二维码中找到有效数据'
+        }
+      }
+    } else {
+      validationResult.value = {
+        type: 'error',
+        message: '二维码解析失败'
+      }
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `二维码解析失败: ${error.message}`
+    }
+  }
+}
+
+// 清空解析数据
+const clearDecodeData = () => {
+  qrImageFile.value = null
+  decodedData.value = ''
+  validationResult.value = null
+}
+
+// 复制解析结果
+const copyDecodedData = async () => {
+  if (!decodedData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(decodedData.value)
+    validationResult.value = {
+      type: 'success',
+      message: '解析结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
+  }
+}
+
+// 初始化示例数据
+qrData.value = 'https://example.com'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 100px;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-/* 暗色主题 */
-.dark-theme textarea {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
-}
-
-.dark-theme textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
-}
-
-.config-group {
+.tool-content {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 1rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.config-group label {
-  min-width: 80px;
+.tool-tabs {
+  width: 100%;
 }
 
-.config-group input[type="range"] {
-  flex: 1;
+.input-section {
+  width: 100%;
 }
 
-.config-group select {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+.qr-options {
+  width: 100%;
+}
+
+.option-item {
+  width: 100%;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
+.qr-result {
+  width: 100%;
+  text-align: center;
 }
 
-button.secondary {
-  background: #f1f5f9;
+.qr-result h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.qr-code-container {
+.qr-image-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
+  margin: 1rem 0;
+}
+
+.qr-image-container img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
   border-radius: 4px;
-  padding: 1rem;
 }
 
-.qr-placeholder {
-  text-align: center;
-  color: #94a3b8;
-}
-
-.qr-placeholder i {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-}
-
-.qr-placeholder p {
-  margin: 0;
-}
-
-.result-footer {
+.decode-section {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.file-upload-area {
+  width: 100%;
+}
+
+.decode-result {
+  width: 100%;
+}
+
+.decode-result h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .config-group {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>

@@ -1,338 +1,486 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入文本</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入要加密/解密的文本"
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>加密/解密工具</h2>
+      <p>AES、DES等对称加密算法工具</p>
     </div>
-
-    <div class="tool-section">
-      <h3><i class="fas fa-key"></i> 密钥</h3>
-      <input 
-        v-model="secretKey" 
-        type="password" 
-        placeholder="请输入密钥"
-      />
-    </div>
-
-    <div class="button-group">
-      <button @click="encryptAES">
-        <i class="fas fa-lock"></i> AES加密
-      </button>
-      <button @click="decryptAES">
-        <i class="fas fa-unlock"></i> AES解密
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-tabs v-model="activeTab" class="tool-tabs">
+        <el-tab-pane label="AES加密" name="aes">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="input-section">
+                <el-input
+                  v-model="aesInput"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="请输入要加密的文本"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <div class="key-section">
+                <el-input
+                  v-model="aesKey"
+                  placeholder="请输入加密密钥"
+                  show-password
+                />
+              </div>
+            </el-col>
+            <el-col :span="12">
+              <div class="iv-section">
+                <el-input
+                  v-model="aesIv"
+                  placeholder="请输入初始化向量(IV)"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="button-group">
+            <el-button type="primary" @click="encryptAES">
+              <i class="fas fa-lock"></i> AES加密
+            </el-button>
+            <el-button @click="decryptAES">
+              <i class="fas fa-unlock"></i> AES解密
+            </el-button>
+            <el-button @click="generateAESKey">
+              <i class="fas fa-key"></i> 生成密钥
+            </el-button>
+            <el-button @click="clearAES">
+              <i class="fas fa-trash"></i> 清空
+            </el-button>
+            <el-button type="success" @click="copyAESResult">
+              <i class="fas fa-copy"></i> 复制结果
+            </el-button>
+          </div>
+          
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="output-section">
+                <el-input
+                  v-model="aesOutput"
+                  type="textarea"
+                  :rows="6"
+                  placeholder="加密/解密结果将显示在这里"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        
+        <el-tab-pane label="Base64编码" name="base64">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="input-section">
+                <el-input
+                  v-model="base64Input"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="请输入要编码或解码的文本"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="button-group">
+            <el-button type="primary" @click="encodeBase64">
+              <i class="fas fa-lock"></i> Base64编码
+            </el-button>
+            <el-button @click="decodeBase64">
+              <i class="fas fa-unlock"></i> Base64解码
+            </el-button>
+            <el-button @click="clearBase64">
+              <i class="fas fa-trash"></i> 清空
+            </el-button>
+            <el-button type="success" @click="copyBase64Result">
+              <i class="fas fa-copy"></i> 复制结果
+            </el-button>
+          </div>
+          
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="output-section">
+                <el-input
+                  v-model="base64Output"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="编码/解码结果将显示在这里"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+      </el-tabs>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="text"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>加密解密工具支持对称加密算法，用于保护敏感数据：</p>
-      <ul class="description-list">
-        <li>AES：高级加密标准，安全性高</li>
-        <li>所有加密解密操作均在浏览器端完成</li>
-        <li>保证数据隐私，密钥不会上传到服务器</li>
-        <li>适用于密码、敏感信息等数据保护</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
 
-const inputData = ref('')
-const secretKey = ref('wetools-secret-key')
-const outputData = ref('')
+// 数据模型
+const activeTab = ref('aes')
+const aesInput = ref('')
+const aesKey = ref('')
+const aesIv = ref('')
+const aesOutput = ref('')
+const base64Input = ref('')
+const base64Output = ref('')
+const validationResult = ref(null)
 
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
-
-// AES加密（简化实现）
-const encryptAES = () => {
+// AES加密
+const encryptAES = async () => {
   try {
-    // 这里使用简单的模拟实现，实际项目中应使用crypto库
+    if (!aesInput.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要加密的文本'
+      }
+      return
+    }
+    
+    if (!aesKey.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入加密密钥'
+      }
+      return
+    }
+    
+    // 使用Web Crypto API进行AES加密
     const encoder = new TextEncoder()
-    const data = encoder.encode(inputData.value + secretKey.value)
-    outputData.value = `AES加密结果: ${Array.from(data).map(b => b.toString(16).padStart(2, '0')).join('')}`
-  } catch (e) {
-    outputData.value = '加密错误: ' + e.message
+    const data = encoder.encode(aesInput.value)
+    
+    // 生成密钥
+    const keyData = encoder.encode(aesKey.value.padEnd(32, '0').substring(0, 32))
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-CBC' },
+      false,
+      ['encrypt']
+    )
+    
+    // 生成IV
+    let iv
+    if (aesIv.value.trim()) {
+      const ivData = encoder.encode(aesIv.value.padEnd(16, '0').substring(0, 16))
+      iv = ivData
+    } else {
+      iv = new Uint8Array(16)
+      crypto.getRandomValues(iv)
+    }
+    
+    // 执行加密
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-CBC', iv: iv },
+      key,
+      data
+    )
+    
+    // 将结果转换为Base64
+    const encryptedArray = new Uint8Array(encrypted)
+    aesOutput.value = btoa(String.fromCharCode(...iv, ...encryptedArray))
+    
+    validationResult.value = {
+      type: 'success',
+      message: 'AES加密成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `AES加密失败: ${error.message}`
+    }
   }
 }
 
-// AES解密（简化实现）
-const decryptAES = () => {
+// AES解密
+const decryptAES = async () => {
   try {
-    // 这里使用简单的模拟实现，实际项目中应使用crypto库
-    outputData.value = `AES解密结果: ${inputData.value.replace('AES加密结果: ', '')}`
-  } catch (e) {
-    outputData.value = '解密错误: ' + e.message
+    if (!aesInput.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要解密的文本'
+      }
+      return
+    }
+    
+    if (!aesKey.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入解密密钥'
+      }
+      return
+    }
+    
+    // 使用Web Crypto API进行AES解密
+    const encoder = new TextEncoder()
+    
+    // 从Base64解码
+    const encryptedData = atob(aesInput.value)
+    const encryptedArray = new Uint8Array(encryptedData.length)
+    for (let i = 0; i < encryptedData.length; i++) {
+      encryptedArray[i] = encryptedData.charCodeAt(i)
+    }
+    
+    // 提取IV和加密数据
+    const iv = encryptedArray.slice(0, 16)
+    const data = encryptedArray.slice(16)
+    
+    // 生成密钥
+    const keyData = encoder.encode(aesKey.value.padEnd(32, '0').substring(0, 32))
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-CBC' },
+      false,
+      ['decrypt']
+    )
+    
+    // 执行解密
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-CBC', iv: iv },
+      key,
+      data
+    )
+    
+    // 将结果转换为文本
+    const decoder = new TextDecoder()
+    aesOutput.value = decoder.decode(decrypted)
+    
+    validationResult.value = {
+      type: 'success',
+      message: 'AES解密成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `AES解密失败: ${error.message}`
+    }
   }
 }
 
-// 清空数据
-const clearData = () => {
-  inputData.value = ''
-  outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
+// 生成AES密钥
+const generateAESKey = () => {
   try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    // 生成随机密钥
+    const keyLength = 32 // 256位
+    const array = new Uint8Array(keyLength)
+    crypto.getRandomValues(array)
+    aesKey.value = Array.from(array)
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('')
+    validationResult.value = {
+      type: 'success',
+      message: 'AES密钥生成成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `密钥生成失败: ${error.message}`
+    }
   }
 }
 
-// 复制结果
-const copyResult = async () => {
+// 清空AES数据
+const clearAES = () => {
+  aesInput.value = ''
+  aesKey.value = ''
+  aesIv.value = ''
+  aesOutput.value = ''
+  validationResult.value = null
+}
+
+// Base64编码
+const encodeBase64 = () => {
   try {
-    await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    if (!base64Input.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要编码的文本'
+      }
+      return
+    }
+    
+    base64Output.value = btoa(unescape(encodeURIComponent(base64Input.value)))
+    validationResult.value = {
+      type: 'success',
+      message: 'Base64编码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `Base64编码失败: ${error.message}`
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = 'WeTools 开发者工具箱'
-  encryptAES()
+// Base64解码
+const decodeBase64 = () => {
+  try {
+    if (!base64Input.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要解码的Base64字符串'
+      }
+      return
+    }
+    
+    base64Output.value = decodeURIComponent(escape(atob(base64Input.value)))
+    validationResult.value = {
+      type: 'success',
+      message: 'Base64解码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `Base64解码失败: ${error.message}`
+    }
+  }
 }
 
-init()
+// 清空Base64数据
+const clearBase64 = () => {
+  base64Input.value = ''
+  base64Output.value = ''
+  validationResult.value = null
+}
+
+// 复制AES结果
+const copyAESResult = async () => {
+  if (!aesOutput.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(aesOutput.value)
+    validationResult.value = {
+      type: 'success',
+      message: 'AES结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
+  }
+}
+
+// 复制Base64结果
+const copyBase64Result = async () => {
+  if (!base64Output.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(base64Output.value)
+    validationResult.value = {
+      type: 'success',
+      message: 'Base64结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
+  }
+}
+
+// 初始化示例数据
+aesInput.value = 'Hello, WeTools!'
+aesKey.value = 'my-secret-key-12345'
+base64Input.value = 'Hello, WeTools!'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea, input {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-textarea {
-  min-height: 150px;
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-textarea:focus, input:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* 暗色主题 */
-.dark-theme textarea, .dark-theme input {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.tool-tabs {
+  width: 100%;
 }
 
-.dark-theme textarea:focus, .dark-theme input:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+.input-section,
+.output-section,
+.key-section,
+.iv-section {
+  width: 100%;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
-}
-
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
-}
-
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>
