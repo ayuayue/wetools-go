@@ -5,6 +5,7 @@
       class="sidebar-menu"
       :collapse="isCollapsed"
       :unique-opened="false"
+      :default-openeds="getDefaultOpeneds()"
       @select="handleMenuSelect"
     >
       <el-sub-menu 
@@ -60,6 +61,12 @@ onMounted(() => {
     }
   }
 })
+
+// 获取默认展开的菜单项
+const getDefaultOpeneds = () => {
+  if (!props.menuItems) return []
+  return props.menuItems.map(category => category.id)
+}
 
 // 处理菜单选择
 const handleMenuSelect = (index) => {

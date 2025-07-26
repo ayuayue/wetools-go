@@ -1,5 +1,5 @@
 <template>
-  <el-container class="main-layout-container" direction="horizontal">
+  <el-container class="main-layout-container">
     <!-- Sidebar -->
     <div class="sidebar-container">
       <el-aside 
@@ -32,21 +32,23 @@
       </div>
     </div>
 
-    <!-- Main Content -->
-    <el-main class="main-content">
-      <ToolHeader />
+    <!-- Main Content and Footer -->
+    <el-container direction="vertical" class="content-container">
+      <el-main class="main-content">
+        <ToolHeader />
+        
+        <component 
+          :is="currentTool.component" 
+          @tool-result="handleToolResult"
+        />
+      </el-main>
       
-      <component 
-        :is="currentTool.component" 
-        @tool-result="handleToolResult"
-      />
-    </el-main>
+      <!-- Footer -->
+      <el-footer class="footer">
+        <p>© 2023 WeTools - 开发者工具箱 | 支持JSON、XML、HTML、Base64、二维码、加密解密等工具</p>
+      </el-footer>
+    </el-container>
   </el-container>
-  
-  <!-- Footer -->
-  <el-footer class="footer">
-    <p>© 2023 WeTools - 开发者工具箱 | 支持JSON、XML、HTML、Base64、二维码、加密解密等工具</p>
-  </el-footer>
 </template>
 
 <script setup>
@@ -173,6 +175,11 @@ onMounted(() => {
   overflow: hidden;
 }
 
+.content-container {
+  flex: 1;
+  overflow: hidden;
+}
+
 .sidebar-container {
   position: relative;
   height: 100%;
@@ -192,9 +199,9 @@ onMounted(() => {
 
 .main-content {
   padding: 2rem;
-  overflow: hidden;
+  overflow-y: auto;
   background-color: #f5f7fa;
-  height: 100%;
+  flex: 1;
 }
 
 .footer {
@@ -204,6 +211,7 @@ onMounted(() => {
   font-size: 0.9rem;
   border-top: 1px solid #e1e5e9;
   background: white;
+  flex-shrink: 0;
 }
 
 /* 暗色主题 */
