@@ -1,54 +1,54 @@
 <template>
-  <div class="app-container" :class="{ 'dark-theme': isDarkTheme, 'sidebar-collapsed': isSidebarCollapsed }">
-    <!-- Header -->
-    <header class="header">
-      <h1><i class="fas fa-toolbox"></i> WeTools 开发者工具箱</h1>
-      <p>JSON、XML、HTML、Base64、二维码、加密解密、随机字符串等一站式开发工具</p>
-      <!-- 主题切换按钮 -->
-      <button class="theme-toggle" @click="toggleTheme">
-        <i :class="isDarkTheme ? 'fas fa-sun' : 'fas fa-moon'"></i>
-      </button>
-    </header>
-
-    <div class="container">
-      <!-- Sidebar -->
-      <div class="sidebar-wrapper" :class="{ 'collapsed': isSidebarCollapsed }">
+  <el-container class="main-layout-container" direction="horizontal">
+    <!-- Sidebar -->
+    <div class="sidebar-container">
+      <el-aside 
+        class="sidebar-wrapper" 
+        :class="{ 'collapsed': isSidebarCollapsed }"
+        :width="isSidebarCollapsed ? '64px' : '220px'"
+      >
         <Sidebar 
           :menu-items="menuData" 
           @menu-item-click="handleMenuItemClick" 
-          :class="{ 'collapsed': isSidebarCollapsed }"
+          :is-collapsed="isSidebarCollapsed"
         />
-      </div>
+      </el-aside>
       
       <!-- 菜单收起按钮 -->
-      <button class="sidebar-toggle" @click="toggleSidebar">
-        <i :class="isSidebarCollapsed ? 'fas fa-arrow-right' : 'fas fa-arrow-left'"></i>
-      </button>
-
-      <!-- Main Content -->
-      <main class="main-content">
-        <ToolHeader 
-          :title="currentTool.title" 
-          :description="currentTool.description" 
-          :icon="currentTool.icon" 
+      <div class="sidebar-toggle-wrapper">
+        <el-button 
+          class="sidebar-toggle" 
+          :icon="isSidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" 
+          circle 
+          @click="toggleSidebar"
         />
-        
-        <component 
-          :is="currentTool.component" 
-          @tool-result="handleToolResult"
-        />
-      </main>
+      </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <p>© 2023 WeTools - 开发者工具箱 | 支持JSON、XML、HTML、Base64、二维码、加密解密等工具</p>
-    </footer>
-  </div>
+    <!-- Main Content -->
+    <el-main class="main-content">
+      <ToolHeader 
+        :title="currentTool.title" 
+        :description="currentTool.description" 
+        :icon="currentTool.icon" 
+      />
+      
+      <component 
+        :is="currentTool.component" 
+        @tool-result="handleToolResult"
+      />
+    </el-main>
+  </el-container>
+  
+  <!-- Footer -->
+  <el-footer class="footer">
+    <p>© 2023 WeTools - 开发者工具箱 | 支持JSON、XML、HTML、Base64、二维码、加密解密等工具</p>
+  </el-footer>
 </template>
 
 <script setup>
 import { ref, shallowRef, onMounted, reactive, onBeforeMount, provide, computed } from 'vue'
+import { ElContainer, ElAside, ElMain, ElFooter, ElButton } from 'element-plus'
 import Sidebar from './Sidebar.vue'
 import ToolHeader from './ToolHeader.vue'
 import JsonTool from './tools/JsonTool.vue'
@@ -62,9 +62,6 @@ import RandomTool from './tools/RandomTool.vue'
 import UuidTool from './tools/UuidTool.vue'
 import ConverterTool from './tools/ConverterTool.vue'
 import QrTool from './tools/QrTool.vue'
-import JwtTool from './tools/JwtTool.vue'
-import TimestampTool from './tools/TimestampTool.vue'
-import TextTool from './tools/TextTool.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 主题和菜单状态
@@ -92,33 +89,16 @@ const toolComponents = {
   random: RandomTool,
   uuid: UuidTool,
   converter: ConverterTool,
-  qr: QrTool,
-  jwt: JwtTool,
-  timestamp: TimestampTool,
-  text: TextTool
+  qr: QrTool
 }
 
 // 当前选中的工具
 const currentTool = ref({
   title: 'JSON格式化工具',
-  description: '在线JSON格式化、校验、压缩工具，支持JSON转XML、CSV等格式',
+  description: '',
   icon: 'fas fa-file-code',
   component: JsonTool
 })
-
-// 切换主题
-const toggleTheme = () => {
-  isDarkTheme.value = !isDarkTheme.value
-  // 保存主题设置到本地存储
-  localStorage.setItem('theme', isDarkTheme.value ? 'dark' : 'light')
-  
-  // 应用主题到body
-  if (isDarkTheme.value) {
-    document.body.classList.add('dark-theme')
-  } else {
-    document.body.classList.remove('dark-theme')
-  }
-}
 
 // 切换菜单收起状态
 const toggleSidebar = () => {
@@ -131,7 +111,7 @@ const handleMenuItemClick = (tool) => {
   const component = toolComponents[tool.type] || JsonTool
   currentTool.value = {
     title: tool.title,
-    description: tool.description,
+    description: tool.description || '',
     icon: tool.icon,
     component: component
   }
@@ -163,40 +143,32 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.app-container {
+.main-layout-container {
+  flex: 1;
+  min-height: calc(100vh - 120px);
+}
+
+.sidebar-container {
+  position: relative;
+  height: 100%;
+  display: flex;
+}
+
+.sidebar-wrapper {
+  transition: all 0.3s ease;
+  background: white;
+  border-right: 1px solid #e1e5e9;
+  height: 100%;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-}
-
-/* 亮色主题 */
-.app-container {
-  background-color: #f5f7fa;
-  color: #333;
-}
-
-/* 暗色主题 */
-.app-container.dark-theme {
-  background-color: #1a1a1a;
-  color: #e0e0e0;
-}
-
-.container {
-  display: flex;
-  flex: 1;
-  min-height: calc(100vh - 80px);
   position: relative;
 }
 
 .main-content {
-  flex: 1;
   padding: 2rem;
   overflow-y: auto;
-}
-
-/* 暗色主题下的主内容区域 */
-.app-container.dark-theme .main-content {
-  background-color: #2d2d2d;
+  background-color: #f5f7fa;
 }
 
 .footer {
@@ -208,123 +180,68 @@ onMounted(() => {
   background: white;
 }
 
-/* 暗色主题下的页脚 */
-.app-container.dark-theme .footer {
+/* 暗色主题 */
+.dark-theme .sidebar-wrapper {
+  background: #2d2d2d;
+  border-right: 1px solid #444;
+}
+
+.dark-theme .main-content {
+  background-color: #2d2d2d;
+}
+
+.dark-theme .footer {
   background-color: #222;
   color: #aaa;
   border-top: 1px solid #444;
 }
 
-/* 主题切换按钮 */
-.theme-toggle {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  transition: background 0.3s;
-}
-
-.theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* 暗色主题下的主题切换按钮 */
-.app-container.dark-theme .theme-toggle {
-  background: rgba(255, 255, 255, 0.1);
-  color: #e0e0e0;
-}
-
-.app-container.dark-theme .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-/* 菜单收起按钮 */
-.sidebar-toggle {
+/* 菜单收起按钮包装器 */
+.sidebar-toggle-wrapper {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: #667eea;
-  border: none;
-  border-radius: 0 5px 5px 0;
-  width: 20px;
-  height: 40px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  transition: all 0.3s;
+  right: -10px;
   z-index: 100;
 }
 
+.sidebar-toggle {
+  background: #667eea !important;
+  border: none;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .sidebar-toggle:hover {
-  background: #5a6fd8;
-}
-
-/* 侧边栏包装器 */
-.sidebar-wrapper {
-  width: 180px;
-  transition: width 0.3s ease;
-  overflow: hidden;
-}
-
-.app-container.sidebar-collapsed .sidebar-wrapper {
-  width: 50px;
-}
-
-/* 展开时的按钮位置 */
-.app-container:not(.sidebar-collapsed) .sidebar-toggle {
-  left: 180px;
-}
-
-/* 收起时的按钮位置 */
-.app-container.sidebar-collapsed .sidebar-toggle {
-  left: 50px;
-}
-
-/* 确保侧边栏完全隐藏文字 */
-.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed) {
-  width: 100%;
-}
-
-.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed .category-header h3 span),
-.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed .sidebar-item span) {
-  display: none;
+  background: #5a6fd8 !important;
 }
 
 /* 暗色主题下的菜单收起按钮 */
-.app-container.dark-theme .sidebar-toggle {
-  background: #444;
+.dark-theme .sidebar-toggle {
+  background: #444 !important;
 }
 
-.app-container.dark-theme .sidebar-toggle:hover {
-  background: #555;
+.dark-theme .sidebar-toggle:hover {
+  background: #555 !important;
 }
 
 @media (max-width: 768px) {
-  .container {
-    flex-direction: column;
+  .sidebar-wrapper {
+    width: 100% !important;
+    max-height: 200px;
+    border-right: none;
+    border-bottom: 1px solid #e1e5e9;
   }
   
   .main-content {
     padding: 1rem;
   }
   
-  .theme-toggle {
-    position: static;
-    margin: 0.5rem;
+  .sidebar-toggle {
+    display: none;
   }
   
-  .sidebar-toggle {
+  .collapsed + .sidebar-toggle-wrapper .sidebar-toggle {
     display: none;
   }
 }

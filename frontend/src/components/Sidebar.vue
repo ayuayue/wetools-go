@@ -23,6 +23,7 @@
         </h3>
       </div>
       
+      <transition name="slide">
       <div 
         v-show="!category.collapsed && !isCollapsed" 
         class="category-items"
@@ -44,6 +45,7 @@
           </el-menu-item>
         </el-menu>
       </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -104,6 +106,8 @@ const isActive = (item) => {
   min-height: 100%;
   height: 100%;
   flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 /* 暗色主题下的侧边栏 */
@@ -131,6 +135,18 @@ const isActive = (item) => {
 
 .sidebar-category {
   margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* 最后一个分类使用 flex-grow 填充剩余空间 */
+.sidebar-category:last-child {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-category:last-child .category-items {
+  flex-grow: 1;
 }
 
 .category-header {
@@ -186,8 +202,9 @@ const isActive = (item) => {
 }
 
 .category-items {
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   margin-top: 0.25rem;
+  overflow: hidden;
 }
 
 /* Element Plus Menu 样式覆盖 */
@@ -240,6 +257,25 @@ const isActive = (item) => {
 /* 收起的菜单样式 */
 .sidebar.collapsed {
   overflow: hidden;
+}
+
+/* 菜单展开/收起动画 */
+.slide-enter-active {
+  transition: all 0.2s ease;
+}
+
+.slide-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
 }
 
 .sidebar.collapsed .category-header h3 span {
