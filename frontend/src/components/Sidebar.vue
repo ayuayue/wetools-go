@@ -155,7 +155,7 @@ const isActive = (item) => {
 }
 
 .category-header h3 {
-  padding: 0.25rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.875rem; /* 14px */
   color: #666;
   display: flex;
@@ -163,6 +163,8 @@ const isActive = (item) => {
   align-items: center;
   gap: 0.25rem;
   margin: 0;
+  min-height: 40px;
+  box-sizing: border-box;
 }
 
 .category-header h3 > i:first-child {
@@ -188,6 +190,8 @@ const isActive = (item) => {
   gap: 0.25rem;
   margin: 0 0.25rem;
   border-radius: 2px;
+  min-height: 36px;
+  box-sizing: border-box;
 }
 
 .sidebar-item:hover {
@@ -225,8 +229,9 @@ const isActive = (item) => {
   gap: 0.25rem;
   margin: 0 0.25rem;
   border-radius: 2px;
-  height: auto !important;
+  min-height: 36px !important;
   line-height: 1.5 !important;
+  box-sizing: border-box;
 }
 
 .sidebar-menu :deep(.el-menu-item:hover) {
@@ -290,6 +295,7 @@ const isActive = (item) => {
   padding: 0.5rem;
   justify-content: center;
   overflow: hidden;
+  min-height: 40px;
 }
 
 .sidebar.collapsed .category-header h3 i:first-child {
