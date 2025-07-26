@@ -5,7 +5,7 @@
       <el-aside 
         class="sidebar-wrapper" 
         :class="{ 'collapsed': isSidebarCollapsed }"
-        :width="isSidebarCollapsed ? '64px' : '220px'"
+        :style="{ width: isSidebarCollapsed ? '64px' : sidebarWidth + 'px' }"
       >
         <Sidebar 
           :menu-items="menuData" 
@@ -13,6 +13,13 @@
           :is-collapsed="isSidebarCollapsed"
         />
       </el-aside>
+      
+      <!-- 菜单拉伸手柄 -->
+      <div 
+        v-if="!isSidebarCollapsed"
+        class="sidebar-resize-handle" 
+        @mousedown="startResize"
+      ></div>
       
       <!-- 菜单收起按钮 -->
       <div class="sidebar-toggle-wrapper">
@@ -63,6 +70,7 @@ import { menuItems } from '../config/menuConfig'
 // 主题和菜单状态
 const isDarkTheme = ref(false)
 const isSidebarCollapsed = ref(false)
+const sidebarWidth = ref(220)
 
 // 计算主题
 const theme = computed(() => isDarkTheme.value ? 'dark' : 'light')
@@ -99,6 +107,26 @@ const currentTool = ref({
 // 切换菜单收起状态
 const toggleSidebar = () => {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
+}
+
+// 开始调整侧边栏宽度
+const startResize = (e) => {
+  e.preventDefault()
+  const startX = e.clientX
+  const startWidth = sidebarWidth.value
+  
+  const doDrag = (e) => {
+    const newWidth = startWidth + (e.clientX - startX)
+    sidebarWidth.value = Math.max(180, Math.min(400, newWidth))
+  }
+  
+  const stopDrag = () => {
+    document.removeEventListener('mousemove', doDrag)
+    document.removeEventListener('mouseup', stopDrag)
+  }
+  
+  document.addEventListener('mousemove', doDrag)
+  document.addEventListener('mouseup', stopDrag)
 }
 
 // 处理菜单项点击
@@ -141,7 +169,7 @@ onMounted(() => {
 <style scoped>
 .main-layout-container {
   flex: 1;
-  min-height: calc(100vh - 120px);
+  height: calc(100vh - 120px);
   overflow: hidden;
 }
 
@@ -166,6 +194,7 @@ onMounted(() => {
   padding: 2rem;
   overflow: hidden;
   background-color: #f5f7fa;
+  height: 100%;
 }
 
 .footer {
@@ -191,6 +220,24 @@ onMounted(() => {
   background-color: #222;
   color: #aaa;
   border-top: 1px solid #444;
+}
+
+/* 菜单拉伸手柄 */
+.sidebar-resize-handle {
+  width: 4px;
+  height: 100%;
+  background: #667eea;
+  cursor: col-resize;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.sidebar-resize-handle:hover {
+  opacity: 1;
 }
 
 /* 菜单收起按钮包装器 */
