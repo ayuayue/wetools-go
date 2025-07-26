@@ -12,11 +12,13 @@
 
     <div class="container">
       <!-- Sidebar -->
-      <Sidebar 
-        :menu-items="menuData" 
-        @menu-item-click="handleMenuItemClick" 
-        :class="{ 'collapsed': isSidebarCollapsed }"
-      />
+      <div class="sidebar-wrapper" :class="{ 'collapsed': isSidebarCollapsed }">
+        <Sidebar 
+          :menu-items="menuData" 
+          @menu-item-click="handleMenuItemClick" 
+          :class="{ 'collapsed': isSidebarCollapsed }"
+        />
+      </div>
       
       <!-- 菜单收起按钮 -->
       <button class="sidebar-toggle" @click="toggleSidebar">
@@ -183,6 +185,7 @@ onMounted(() => {
   display: flex;
   flex: 1;
   min-height: calc(100vh - 80px);
+  position: relative;
 }
 
 .main-content {
@@ -267,6 +270,17 @@ onMounted(() => {
   background: #5a6fd8;
 }
 
+/* 侧边栏包装器 */
+.sidebar-wrapper {
+  width: 180px;
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.app-container.sidebar-collapsed .sidebar-wrapper {
+  width: 50px;
+}
+
 /* 展开时的按钮位置 */
 .app-container:not(.sidebar-collapsed) .sidebar-toggle {
   left: 180px;
@@ -274,7 +288,17 @@ onMounted(() => {
 
 /* 收起时的按钮位置 */
 .app-container.sidebar-collapsed .sidebar-toggle {
-  left: 45px;
+  left: 50px;
+}
+
+/* 确保侧边栏完全隐藏文字 */
+.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed) {
+  width: 100%;
+}
+
+.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed .category-header h3 span),
+.app-container.sidebar-collapsed .sidebar-wrapper :deep(.sidebar.collapsed .sidebar-item span) {
+  display: none;
 }
 
 /* 暗色主题下的菜单收起按钮 */

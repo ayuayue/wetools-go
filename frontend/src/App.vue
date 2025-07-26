@@ -32,7 +32,8 @@ body {
   font-size: 2rem;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .header p {
