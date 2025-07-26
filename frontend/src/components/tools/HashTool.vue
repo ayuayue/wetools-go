@@ -47,6 +47,9 @@
         <el-button type="success" @click="copyResult">
           <i class="fas fa-copy"></i> 复制结果
         </el-button>
+        <el-button @click="isUppercase = !isUppercase" :type="isUppercase ? 'primary' : 'default'">
+          {{ isUppercase ? '转小写' : '转大写' }}
+        </el-button>
       </div>
       
       <div class="result-section" v-if="hashResult">
@@ -88,6 +91,7 @@ const selectedAlgorithm = ref('MD5')
 const hashResult = ref('')
 const allHashResults = ref([])
 const validationResult = ref(null)
+const isUppercase = ref(true) // 默认大写
 
 // 哈希算法列表
 const algorithms = ref([
@@ -100,6 +104,11 @@ const algorithms = ref([
 // 选择算法
 const selectAlgorithm = (algorithm) => {
   selectedAlgorithm.value = algorithm
+}
+
+// 转换哈希结果大小写
+const convertCase = (hash) => {
+  return isUppercase.value ? hash.toUpperCase() : hash.toLowerCase()
 }
 
 // 计算哈希值
@@ -121,25 +130,29 @@ const calculateHash = async () => {
     switch (selectedAlgorithm.value) {
       case 'MD5':
         // MD5需要使用第三方库或自定义实现，这里简化处理
-        hashResult.value = calculateMD5(inputData.value)
+        const md5Result = calculateMD5(inputData.value)
+        hashResult.value = convertCase(md5Result)
         break
       case 'SHA1':
         hashBuffer = await crypto.subtle.digest('SHA-1', data)
-        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+        const sha1Result = Array.from(new Uint8Array(hashBuffer))
           .map(b => b.toString(16).padStart(2, '0'))
-          .join('').toUpperCase()
+          .join('')
+        hashResult.value = convertCase(sha1Result)
         break
       case 'SHA256':
         hashBuffer = await crypto.subtle.digest('SHA-256', data)
-        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+        const sha256Result = Array.from(new Uint8Array(hashBuffer))
           .map(b => b.toString(16).padStart(2, '0'))
-          .join('').toUpperCase()
+          .join('')
+        hashResult.value = convertCase(sha256Result)
         break
       case 'SHA512':
         hashBuffer = await crypto.subtle.digest('SHA-512', data)
-        hashResult.value = Array.from(new Uint8Array(hashBuffer))
+        const sha512Result = Array.from(new Uint8Array(hashBuffer))
           .map(b => b.toString(16).padStart(2, '0'))
-          .join('').toUpperCase()
+          .join('')
+        hashResult.value = convertCase(sha512Result)
         break
       default:
         throw new Error('不支持的哈希算法')
@@ -177,26 +190,26 @@ const calculateAllHashes = async () => {
     const sha1Buffer = await crypto.subtle.digest('SHA-1', data)
     const sha1Hash = Array.from(new Uint8Array(sha1Buffer))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('').toUpperCase()
-    results.push({ algorithm: 'SHA1', hash: sha1Hash })
+      .join('')
+    results.push({ algorithm: 'SHA1', hash: convertCase(sha1Hash) })
     
     // 计算SHA256
     const sha256Buffer = await crypto.subtle.digest('SHA-256', data)
     const sha256Hash = Array.from(new Uint8Array(sha256Buffer))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('').toUpperCase()
-    results.push({ algorithm: 'SHA256', hash: sha256Hash })
+      .join('')
+    results.push({ algorithm: 'SHA256', hash: convertCase(sha256Hash) })
     
     // 计算SHA512
     const sha512Buffer = await crypto.subtle.digest('SHA-512', data)
     const sha512Hash = Array.from(new Uint8Array(sha512Buffer))
       .map(b => b.toString(16).padStart(2, '0'))
-      .join('').toUpperCase()
-    results.push({ algorithm: 'SHA512', hash: sha512Hash })
+      .join('')
+    results.push({ algorithm: 'SHA512', hash: convertCase(sha512Hash) })
     
     // 计算MD5 (简化实现)
     const md5Hash = calculateMD5(inputData.value)
-    results.push({ algorithm: 'MD5', hash: md5Hash })
+    results.push({ algorithm: 'MD5', hash: convertCase(md5Hash) })
     
     allHashResults.value = results
     hashResult.value = ''
@@ -213,7 +226,7 @@ const calculateAllHashes = async () => {
 }
 
 // 简化的MD5计算函数
-const calculateMD5 = async (str) => {
+const calculateMD5 = (str) => {
   // 使用简单的MD5实现
   const md5 = (function() {
     // MD5实现代码
@@ -401,7 +414,7 @@ const calculateMD5 = async (str) => {
       c = md5_AddUnsigned(c, CC);
       d = md5_AddUnsigned(d, DD);
     }
-    return (md5_WordToHex(a) + md5_WordToHex(b) + md5_WordToHex(c) + md5_WordToHex(d)).toUpperCase();
+    return (md5_WordToHex(a) + md5_WordToHex(b) + md5_WordToHex(c) + md5_WordToHex(d));
   })();
   return md5;
 }
@@ -416,8 +429,16 @@ const clearData = () => {
 
 // 复制结果
 const copyResult = async () => {
-  const result = hashResult.value || (allHashResults.value.length > 0 ? 
+  let result = hashResult.value || (allHashResults.value.length > 0 ? 
     allHashResults.value.map(r => `${r.algorithm}: ${r.hash}`).join('\n') : '')
+  
+  // 如果需要转换大小写，则进行转换
+  if (result && !hashResult.value && allHashResults.value.length > 0) {
+    // 对于所有结果的复制，保持原有格式
+  } else if (result && hashResult.value) {
+    // 对于单个结果的复制，根据当前设置转换大小写
+    result = convertCase(result)
+  }
   
   if (!result) {
     validationResult.value = {
