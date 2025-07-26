@@ -4,6 +4,7 @@
       :default-active="activeItem?.id"
       class="sidebar-menu"
       :collapse="isCollapsed"
+      :unique-opened="false"
       @select="handleMenuSelect"
     >
       <el-sub-menu 
@@ -130,3 +131,4 @@ const handleMenuSelect = (index) => {
 .sidebar-menu:not(.el-menu--collapse) {
   width: 200px;
 }
+</style>
