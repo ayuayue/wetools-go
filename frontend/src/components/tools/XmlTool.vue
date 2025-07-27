@@ -1,129 +1,156 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入XML</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder='<root><name>WeTools</name><type>developer tools</type></root>'
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>XML 格式化工具</h2>
+      <p>在线XML格式化、校验、压缩工具</p>
     </div>
-
-    <div class="button-group">
-      <button @click="formatXml">
-        <i class="fas fa-magic"></i> 格式化
-      </button>
-      <button @click="compressXml">
-        <i class="fas fa-compress"></i> 压缩
-      </button>
-      <button @click="validateXml">
-        <i class="fas fa-check-circle"></i> 校验
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="input-section">
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="10"
+              placeholder='请输入XML数据，例如：&lt;root&gt;&lt;name&gt;WeTools&lt;/name&gt;&lt;type&gt;developer tools&lt;/type&gt;&lt;/root&gt;'
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="formatXml">
+          <i class="fas fa-magic"></i> 格式化
+        </el-button>
+        <el-button @click="compressXml">
+          <i class="fas fa-compress"></i> 压缩
+        </el-button>
+        <el-button @click="validateXml">
+          <i class="fas fa-check-circle"></i> 校验
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="xml"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="output-section">
+            <el-input
+              v-model="outputData"
+              type="textarea"
+              :rows="10"
+              placeholder="格式化后的XML结果将显示在这里"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>XML（可扩展标记语言）是一种标记语言。本工具可以帮助您：</p>
-      <ul class="description-list">
-        <li>格式化XML数据，使其更易读</li>
-        <li>压缩XML数据，去除多余空格</li>
-        <li>校验XML语法是否正确</li>
-        <li>支持XML与其他格式互转</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
 
+// 数据模型
 const inputData = ref('')
 const outputData = ref('')
-
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+const validationResult = ref(null)
 
 // 格式化XML
 const formatXml = () => {
   try {
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(inputData.value, "text/xml")
-    
-    // 检查解析错误
-    const parseError = xmlDoc.getElementsByTagName("parsererror")
-    if (parseError.length > 0) {
-      throw new Error("XML解析错误")
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
     }
     
-    // 格式化XML
-    const serializer = new XMLSerializer()
-    let formatted = serializer.serializeToString(xmlDoc)
-    
-    // 简单的格式化（实际项目中可以使用更复杂的格式化逻辑）
-    formatted = formatted.replace(/></g, ">\n<")
+    // 简单的XML格式化函数
+    const formatted = formatXmlString(inputData.value)
     outputData.value = formatted
-  } catch (e) {
-    outputData.value = 'XML格式错误: ' + e.message
+    validationResult.value = {
+      type: 'success',
+      message: 'XML格式化成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `XML格式错误: ${error.message}`
+    }
   }
 }
 
 // 压缩XML
 const compressXml = () => {
   try {
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(inputData.value, "text/xml")
-    
-    // 检查解析错误
-    const parseError = xmlDoc.getElementsByTagName("parsererror")
-    if (parseError.length > 0) {
-      throw new Error("XML解析错误")
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
     }
     
-    // 压缩XML
-    const serializer = new XMLSerializer()
-    outputData.value = serializer.serializeToString(xmlDoc)
-  } catch (e) {
-    outputData.value = 'XML格式错误: ' + e.message
+    // 移除多余的空白字符
+    const compressed = inputData.value.replace(/>\s+</g, '><').trim()
+    outputData.value = compressed
+    validationResult.value = {
+      type: 'success',
+      message: 'XML压缩成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `XML处理错误: ${error.message}`
+    }
   }
 }
 
 // 校验XML
 const validateXml = () => {
   try {
-    const parser = new DOMParser()
-    const xmlDoc = parser.parseFromString(inputData.value, "text/xml")
-    
-    // 检查解析错误
-    const parseError = xmlDoc.getElementsByTagName("parsererror")
-    if (parseError.length > 0) {
-      throw new Error("XML解析错误")
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'info',
+        message: '请输入XML数据进行校验'
+      }
+      return
     }
     
-    outputData.value = '✓ XML格式正确'
-  } catch (e) {
-    outputData.value = '✗ XML格式错误: ' + e.message
+    // 简单的XML校验
+    const parser = new DOMParser()
+    const doc = parser.parseFromString(inputData.value, 'text/xml')
+    
+    // 检查是否有解析错误
+    const errorNode = doc.querySelector('parsererror')
+    if (errorNode) {
+      throw new Error('XML格式不正确')
+    }
+    
+    validationResult.value = {
+      type: 'success',
+      message: 'XML格式正确！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `XML格式错误: ${error.message}`
+    }
   }
 }
 
@@ -131,185 +158,126 @@ const validateXml = () => {
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  if (!outputData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
     await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = '<root><name>WeTools</name><type>developer tools</type><features><feature>JSON</feature><feature>XML</feature><feature>HTML</feature></features></root>'
-  formatXml()
+// 简单的XML格式化函数
+const formatXmlString = (xml) => {
+  let formatted = ''
+  let indent = ''
+  const tab = '  ' // 2个空格缩进
+  let inTag = false
+  
+  for (let i = 0; i < xml.length; i++) {
+    const char = xml.charAt(i)
+    
+    if (char === '<' && xml.charAt(i + 1) !== '/') {
+      // 开始标签
+      formatted += '\n' + indent + char
+      indent += tab
+      inTag = true
+    } else if (char === '<' && xml.charAt(i + 1) === '/') {
+      // 结束标签
+      indent = indent.slice(0, -tab.length)
+      formatted += '\n' + indent + char
+      inTag = true
+    } else if (char === '>' && inTag) {
+      // 标签结束
+      formatted += char
+      inTag = false
+    } else {
+      formatted += char
+    }
+  }
+  
+  // 移除第一行的换行符并清理多余的空白
+  return formatted.trim()
 }
 
-init()
+// 初始化示例数据
+inputData.value = '<root><name>WeTools</name><type>developer tools</type><features><feature>JSON</feature><feature>XML</feature><feature>HTML</feature></features></root>'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
 }
 
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
+.tool-header p {
+  margin: 0;
+  color: #666;
+}
+
+.tool-content {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
+.input-section,
+.output-section {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-}
-
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
 }
 
-button:hover {
-  background: #5a6fd8;
-}
-
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
-}
-
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>

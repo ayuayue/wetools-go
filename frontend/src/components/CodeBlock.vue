@@ -1,11 +1,16 @@
 <template>
-  <div class="code-block-container" :data-theme="theme">
+  <el-card class="code-block-container" shadow="never" :data-theme="theme">
     <div class="code-block-header" :data-theme="theme" v-if="showHeader">
       <div class="language-info">{{ displayLanguage }}</div>
       <div class="actions">
-        <button class="copy-btn" @click="copyCode">
+        <el-button 
+          class="copy-btn" 
+          size="small" 
+          @click="copyCode"
+          type="success"
+        >
           <i class="fas fa-copy"></i> {{ copied ? '已复制' : '复制' }}
-        </button>
+        </el-button>
       </div>
     </div>
     <pre 
@@ -16,11 +21,12 @@
       :class="`language-${prismLanguage}`" 
       ref="codeRef"
     >{{ code }}</code></pre>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
 import { ref, onMounted, onUpdated, computed, watch } from 'vue'
+import { ElCard, ElButton } from 'element-plus'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism.css'
 import 'prismjs/themes/prism-tomorrow.css'
@@ -191,6 +197,12 @@ watch(() => props.language, () => {
   border: 1px solid #4a5568;
 }
 
+/* 响应MainLayout的暗色主题 */
+.dark-theme .code-block-container {
+  background: #2d3748;
+  border: 1px solid #4a5568;
+}
+
 .code-block-header {
   display: flex;
   justify-content: space-between;
@@ -203,6 +215,12 @@ watch(() => props.language, () => {
 
 /* 暗色主题 */
 .code-block-header[data-theme="dark"] {
+  background: #4a5568;
+  color: #e2e8f0;
+}
+
+/* 响应MainLayout的暗色主题 */
+.dark-theme .code-block-header {
   background: #4a5568;
   color: #e2e8f0;
 }
@@ -239,6 +257,24 @@ watch(() => props.language, () => {
   background: #16a34a;
 }
 
+/* 暗色主题下的复制按钮 */
+.code-block-container[data-theme="dark"] .copy-btn {
+  background: #22c55e;
+}
+
+.code-block-container[data-theme="dark"] .copy-btn:hover {
+  background: #16a34a;
+}
+
+/* 响应MainLayout的暗色主题下的复制按钮 */
+.dark-theme .code-block-container .copy-btn {
+  background: #22c55e;
+}
+
+.dark-theme .code-block-container .copy-btn:hover {
+  background: #16a34a;
+}
+
 .code-block {
   margin: 0;
   border-radius: 0;
@@ -250,6 +286,13 @@ watch(() => props.language, () => {
 pre[class*="language-"] {
   margin: 0;
   border-radius: 0;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+code[class*="language-"] {
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
 
 pre.line-numbers {
@@ -297,12 +340,24 @@ pre.line-numbers > code {
 /* Prism主题切换样式 */
 .code-block-container[data-theme="light"] pre[class*="language-"] {
   /* 使用Prism默认亮色主题 */
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] pre[class*="language-"] {
   /* 使用Prism暗色主题 */
   background: #2d3748 !important;
   color: #e2e8f0 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+/* 响应MainLayout的暗色主题 */
+.dark-theme .code-block-container pre[class*="language-"] {
+  background: #2d3748 !important;
+  color: #e2e8f0 !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.comment,
@@ -310,10 +365,12 @@ pre.line-numbers > code {
 .code-block-container[data-theme="dark"] .token.doctype,
 .code-block-container[data-theme="dark"] .token.cdata {
   color: #88c0d0 !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.punctuation {
   color: #eceff4 !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.property,
@@ -324,6 +381,7 @@ pre.line-numbers > code {
 .code-block-container[data-theme="dark"] .token.symbol,
 .code-block-container[data-theme="dark"] .token.deleted {
   color: #b48ead !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.selector,
@@ -333,6 +391,7 @@ pre.line-numbers > code {
 .code-block-container[data-theme="dark"] .token.builtin,
 .code-block-container[data-theme="dark"] .token.inserted {
   color: #a3be8c !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.operator,
@@ -341,21 +400,88 @@ pre.line-numbers > code {
 .code-block-container[data-theme="dark"] .language-css .token.string,
 .code-block-container[data-theme="dark"] .style .token.string {
   color: #81a1c1 !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.atrule,
 .code-block-container[data-theme="dark"] .token.attr-value,
 .code-block-container[data-theme="dark"] .token.keyword {
   color: #81a1c1 !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.function {
   color: #8fbcbb !important;
+  text-shadow: none !important;
 }
 
 .code-block-container[data-theme="dark"] .token.regex,
 .code-block-container[data-theme="dark"] .token.important,
 .code-block-container[data-theme="dark"] .token.variable {
   color: #8fbcbb !important;
+  text-shadow: none !important;
+}
+
+/* 响应MainLayout的暗色主题 */
+.dark-theme .code-block-container .token.comment,
+.dark-theme .code-block-container .token.prolog,
+.dark-theme .code-block-container .token.doctype,
+.dark-theme .code-block-container .token.cdata {
+  color: #88c0d0 !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.punctuation {
+  color: #eceff4 !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.property,
+.dark-theme .code-block-container .token.tag,
+.dark-theme .code-block-container .token.boolean,
+.dark-theme .code-block-container .token.number,
+.dark-theme .code-block-container .token.constant,
+.dark-theme .code-block-container .token.symbol,
+.dark-theme .code-block-container .token.deleted {
+  color: #b48ead !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.selector,
+.dark-theme .code-block-container .token.attr-name,
+.dark-theme .code-block-container .token.string,
+.dark-theme .code-block-container .token.char,
+.dark-theme .code-block-container .token.builtin,
+.dark-theme .code-block-container .token.inserted {
+  color: #a3be8c !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.operator,
+.dark-theme .code-block-container .token.entity,
+.dark-theme .code-block-container .token.url,
+.dark-theme .code-block-container .language-css .token.string,
+.dark-theme .code-block-container .style .token.string {
+  color: #81a1c1 !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.atrule,
+.dark-theme .code-block-container .token.attr-value,
+.dark-theme .code-block-container .token.keyword {
+  color: #81a1c1 !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.function {
+  color: #8fbcbb !important;
+  text-shadow: none !important;
+}
+
+.dark-theme .code-block-container .token.regex,
+.dark-theme .code-block-container .token.important,
+.dark-theme .code-block-container .token.variable {
+  color: #8fbcbb !important;
+  text-shadow: none !important;
 }
 </style>

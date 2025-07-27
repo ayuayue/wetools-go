@@ -92,6 +92,7 @@ const handleMenuSelect = (index) => {
 .sidebar-menu {
   border-right: none;
   height: 100%;
+  overflow-y: auto;
 }
 
 .sidebar-menu :deep(.el-sub-menu__title) {

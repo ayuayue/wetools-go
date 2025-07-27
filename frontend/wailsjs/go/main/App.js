@@ -5,3 +5,11 @@
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
+
+export function OpenURL(arg1) {
+  return window['go']['main']['App']['OpenURL'](arg1);
+}
+
+export function SaveFileToDownloads(arg1, arg2) {
+  return window['go']['main']['App']['SaveFileToDownloads'](arg1, arg2);
+}

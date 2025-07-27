@@ -1,8 +1,4 @@
 <template>
-  <el-card class="tool-header" shadow="never">
-    <div class="header-content">
-    </div>
-  </el-card>
 </template>
 
 <script setup>

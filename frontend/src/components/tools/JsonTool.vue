@@ -1,101 +1,145 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入JSON</h3>
-      <textarea 
-        id="input" 
-        v-model="inputData" 
-        placeholder='{"name": "WeTools", "type": "developer tools"}'
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>JSON 格式化工具</h2>
+      <p>在线JSON格式化、校验、压缩工具</p>
     </div>
-
-    <div class="button-group">
-      <button @click="formatJson">
-        <i class="fas fa-magic"></i> 格式化
-      </button>
-      <button @click="compressJson">
-        <i class="fas fa-compress"></i> 压缩
-      </button>
-      <button @click="validateJson">
-        <i class="fas fa-check-circle"></i> 校验
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="input-section">
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="10"
+              placeholder='请输入JSON数据，例如：{"name": "WeTools", "type": "developer tools"}'
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="formatJson">
+          <i class="fas fa-magic"></i> 格式化
+        </el-button>
+        <el-button @click="compressJson">
+          <i class="fas fa-compress"></i> 压缩
+        </el-button>
+        <el-button @click="validateJson">
+          <i class="fas fa-check-circle"></i> 校验
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
       </div>
-      <div v-if="isValidationResult" class="result validation-result">{{ outputData }}</div>
-      <CodeBlock 
-        v-else
-        :code="outputData" 
-        language="json"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="output-section">
+            <el-input
+              v-model="outputData"
+              type="textarea"
+              :rows="10"
+              placeholder="格式化后的JSON结果将显示在这里"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
       </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>JSON（JavaScript Object Notation）是一种轻量级的数据交换格式。本工具可以帮助您：</p>
-      <ul class="description-list">
-        <li>格式化JSON数据，使其更易读</li>
-        <li>压缩JSON数据，去除多余空格</li>
-        <li>校验JSON语法是否正确</li>
-        <li>支持JSON与其他格式互转</li>
-      </ul>
     </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
 
+// 数据模型
 const inputData = ref('')
 const outputData = ref('')
-const outputRef = ref(null)
-
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+const validationResult = ref(null)
 
 // 格式化JSON
 const formatJson = () => {
   try {
-    const jsonObj = JSON.parse(inputData.value)
-    outputData.value = JSON.stringify(jsonObj, null, 2)
-  } catch (e) {
-    outputData.value = 'JSON格式错误: ' + e.message
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
+    }
+    
+    const parsed = JSON.parse(inputData.value)
+    outputData.value = JSON.stringify(parsed, null, 2)
+    validationResult.value = {
+      type: 'success',
+      message: 'JSON格式化成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `JSON格式错误: ${error.message}`
+    }
   }
 }
 
 // 压缩JSON
 const compressJson = () => {
   try {
-    const jsonObj = JSON.parse(inputData.value)
-    outputData.value = JSON.stringify(jsonObj)
-  } catch (e) {
-    outputData.value = 'JSON格式错误: ' + e.message
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
+    }
+    
+    const parsed = JSON.parse(inputData.value)
+    outputData.value = JSON.stringify(parsed)
+    validationResult.value = {
+      type: 'success',
+      message: 'JSON压缩成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `JSON格式错误: ${error.message}`
+    }
   }
 }
 
 // 校验JSON
 const validateJson = () => {
   try {
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'info',
+        message: '请输入JSON数据进行校验'
+      }
+      return
+    }
+    
     JSON.parse(inputData.value)
-    outputData.value = '✓ JSON格式正确'
-  } catch (e) {
-    outputData.value = '✗ JSON格式错误: ' + e.message
+    validationResult.value = {
+      type: 'success',
+      message: 'JSON格式正确！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `JSON格式错误: ${error.message}`
+    }
   }
 }
 
@@ -103,254 +147,93 @@ const validateJson = () => {
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-    // 可以添加一个提示，但这里简化处理
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  if (!outputData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
     await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-onMounted(() => {
-  inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["JSON", "XML", "HTML", "Base64", "Hash", "Encryption"]}'
-  formatJson()
-})
+// 初始化示例数据
+inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["JSON", "XML", "HTML", "Base64", "Hash", "Encryption"]}'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-/* 暗色主题 */
-.dark-theme textarea {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.dark-theme textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+.input-section,
+.output-section {
+  width: 100%;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
 }
 
-button:hover {
-  background: #5a6fd8;
-}
-
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
-}
-
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result.validation-result {
-  font-family: inherit;
-  white-space: normal;
-  text-align: center;
-  font-size: 16px;
-  font-weight: bold;
-  padding: 2rem;
-}
-
-.result.validation-result:nth-child(1) {
-  color: #10b981;
-}
-
-.result.validation-result:nth-child(2) {
-  color: #ef4444;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>

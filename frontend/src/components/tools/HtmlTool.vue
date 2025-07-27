@@ -1,138 +1,154 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入HTML</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder='<div><h1>WeTools</h1><p>开发者工具箱</p></div>'
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>HTML 格式化工具</h2>
+      <p>在线HTML格式化、清理、压缩工具</p>
     </div>
-
-    <div class="button-group">
-      <button @click="formatHtml">
-        <i class="fas fa-magic"></i> 格式化
-      </button>
-      <button @click="compressHtml">
-        <i class="fas fa-compress"></i> 压缩
-      </button>
-      <button @click="escapeHtml">
-        <i class="fas fa-code"></i> HTML转义
-      </button>
-      <button @click="unescapeHtml">
-        <i class="fas fa-code"></i> HTML反转义
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="input-section">
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="10"
+              placeholder='请输入HTML代码，例如：&lt;div&gt;&lt;h1&gt;Hello World&lt;/h1&gt;&lt;p&gt;This is a paragraph.&lt;/p&gt;&lt;/div&gt;'
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="formatHtml">
+          <i class="fas fa-magic"></i> 格式化
+        </el-button>
+        <el-button @click="compressHtml">
+          <i class="fas fa-compress"></i> 压缩
+        </el-button>
+        <el-button @click="cleanHtml">
+          <i class="fas fa-broom"></i> 清理
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="html"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="output-section">
+            <el-input
+              v-model="outputData"
+              type="textarea"
+              :rows="10"
+              placeholder="格式化后的HTML结果将显示在这里"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>HTML（超文本标记语言）是用于创建网页的标准标记语言。本工具可以帮助您：</p>
-      <ul class="description-list">
-        <li>格式化HTML代码，使其更易读</li>
-        <li>压缩HTML代码，去除多余空格和换行</li>
-        <li>HTML实体编码和解码</li>
-        <li>清理HTML代码</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
 
+// 数据模型
 const inputData = ref('')
 const outputData = ref('')
-
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+const validationResult = ref(null)
 
 // 格式化HTML
 const formatHtml = () => {
   try {
-    // 简单的HTML格式化
-    let formatted = inputData.value
-      .replace(/></g, ">\n<")
-      .replace(/^\s+|\s+$/g, "")
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
+    }
     
+    // 简单的HTML格式化函数
+    const formatted = formatHtmlString(inputData.value)
     outputData.value = formatted
-  } catch (e) {
-    outputData.value = '处理错误: ' + e.message
+    validationResult.value = {
+      type: 'success',
+      message: 'HTML格式化成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `HTML格式错误: ${error.message}`
+    }
   }
 }
 
 // 压缩HTML
 const compressHtml = () => {
   try {
-    // 简单的HTML压缩
-    let compressed = inputData.value
-      .replace(/\n/g, "")
-      .replace(/\s+/g, " ")
-      .replace(/>\s+</g, "><")
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
+    }
     
+    // 移除多余的空白字符
+    const compressed = inputData.value
+      .replace(/>\s+</g, '><')
+      .replace(/\s+/g, ' ')
+      .trim()
     outputData.value = compressed
-  } catch (e) {
-    outputData.value = '处理错误: ' + e.message
+    validationResult.value = {
+      type: 'success',
+      message: 'HTML压缩成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `HTML处理错误: ${error.message}`
+    }
   }
 }
 
-// HTML转义
-const escapeHtml = () => {
+// 清理HTML
+const cleanHtml = () => {
   try {
-    const map = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;'
+    if (!inputData.value.trim()) {
+      outputData.value = ''
+      validationResult.value = null
+      return
     }
     
-    outputData.value = inputData.value.replace(/[&<>"']/g, (m) => map[m])
-  } catch (e) {
-    outputData.value = '处理错误: ' + e.message
-  }
-}
-
-// HTML反转义
-const unescapeHtml = () => {
-  try {
-    const map = {
-      '&amp;': '&',
-      '&lt;': '<',
-      '&gt;': '>',
-      '&quot;': '"',
-      '&#39;': "'"
+    // 移除注释和多余的空白
+    const cleaned = inputData.value
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/>\s+</g, '><')
+      .replace(/\s+/g, ' ')
+      .trim()
+    outputData.value = cleaned
+    validationResult.value = {
+      type: 'success',
+      message: 'HTML清理成功！'
     }
-    
-    let unescaped = inputData.value
-    for (let key in map) {
-      unescaped = unescaped.replace(new RegExp(key, 'g'), map[key])
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `HTML处理错误: ${error.message}`
     }
-    
-    outputData.value = unescaped
-  } catch (e) {
-    outputData.value = '处理错误: ' + e.message
   }
 }
 
@@ -140,197 +156,145 @@ const unescapeHtml = () => {
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  if (!outputData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
     await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = '<div><h1>WeTools</h1><p>开发者工具箱</p><ul><li>JSON工具</li><li>XML工具</li><li>HTML工具</li></ul></div>'
-  formatHtml()
+// 简单的HTML格式化函数
+const formatHtmlString = (html) => {
+  let formatted = ''
+  let indent = ''
+  const tab = '  ' // 2个空格缩进
+  let inTag = false
+  let inScript = false
+  let inStyle = false
+  
+  for (let i = 0; i < html.length; i++) {
+    const char = html.charAt(i)
+    
+    // 检查是否进入script或style标签
+    if (html.substring(i, i + 7).toLowerCase() === '<script') {
+      inScript = true
+    } else if (html.substring(i, i + 8).toLowerCase() === '</script') {
+      inScript = false
+    } else if (html.substring(i, i + 6).toLowerCase() === '<style') {
+      inStyle = true
+    } else if (html.substring(i, i + 7).toLowerCase() === '</style') {
+      inStyle = false
+    }
+    
+    if (char === '<' && !inScript && !inStyle) {
+      // 开始标签
+      if (html.charAt(i + 1) === '/') {
+        // 结束标签
+        indent = indent.slice(0, -tab.length)
+        formatted += '\n' + indent + char
+      } else {
+        // 开始标签
+        formatted += '\n' + indent + char
+        // 不对自闭合标签增加缩进
+        if (html.substring(i).indexOf('>') > html.substring(i).indexOf('/')) {
+          // 不是自闭合标签
+          indent += tab
+        }
+      }
+      inTag = true
+    } else if (char === '>' && inTag && !inScript && !inStyle) {
+      // 标签结束
+      formatted += char
+      inTag = false
+    } else {
+      formatted += char
+    }
+  }
+  
+  // 移除第一行的换行符并清理多余的空白
+  return formatted.trim()
 }
 
-init()
+// 初始化示例数据
+inputData.value = '<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello World</h1><p>This is a paragraph.</p></body></html>'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
 }
 
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
+.tool-header p {
+  margin: 0;
+  color: #666;
+}
+
+.tool-content {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
+.input-section,
+.output-section {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-}
-
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 100px;
+  max-width: 150px;
 }
 
-button:hover {
-  background: #5a6fd8;
-}
-
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
-}
-
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>

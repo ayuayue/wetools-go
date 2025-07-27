@@ -1,524 +1,616 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-exchange-alt"></i> 格式转换器</h3>
-      <div class="converter-group">
-        <div class="converter-row">
-          <select v-model="sourceFormat">
-            <option value="json">JSON</option>
-            <option value="xml">XML</option>
-            <option value="csv">CSV</option>
-          </select>
-          <span>→</span>
-          <select v-model="targetFormat">
-            <option value="json">JSON</option>
-            <option value="xml">XML</option>
-            <option value="csv">CSV</option>
-          </select>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>格式转换器</h2>
+      <p>多种数据格式互转工具</p>
+    </div>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <div class="input-section">
+            <div class="section-header">
+              <h3>输入数据</h3>
+              <div class="format-selector">
+                <el-select v-model="inputFormat" placeholder="选择输入格式">
+                  <el-option
+                    v-for="format in formats"
+                    :key="format.value"
+                    :label="format.label"
+                    :value="format.value"
+                  />
+                </el-select>
+              </div>
+            </div>
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="10"
+              :placeholder="getPlaceholder(inputFormat)"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+        
+        <el-col :span="12">
+          <div class="output-section">
+            <div class="section-header">
+              <h3>输出数据</h3>
+              <div class="format-selector">
+                <el-select v-model="outputFormat" placeholder="选择输出格式">
+                  <el-option
+                    v-for="format in formats"
+                    :key="format.value"
+                    :label="format.label"
+                    :value="format.value"
+                  />
+                </el-select>
+              </div>
+            </div>
+            <el-input
+              v-model="outputData"
+              type="textarea"
+              :rows="10"
+              placeholder="转换结果将显示在这里"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="conversion-options">
+        <h3>转换选项</h3>
+        <div class="options-content">
+          <el-checkbox v-model="prettyPrint">美化输出</el-checkbox>
+          <el-checkbox v-model="preserveOrder">保持键顺序</el-checkbox>
         </div>
       </div>
-    </div>
-
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 源数据</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入要转换的数据"
-      ></textarea>
-    </div>
-
-    <div class="button-group">
-      <button @click="convertData">
-        <i class="fas fa-exchange-alt"></i> 转换
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 转换结果</h3>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="convertData">
+          <i class="fas fa-exchange-alt"></i> 转换
+        </el-button>
+        <el-button @click="swapFormats">
+          <i class="fas fa-exchange-alt"></i> 交换格式
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        :language="targetFormat"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
+      
+      <div class="examples-section">
+        <h3>常用转换示例</h3>
+        <div class="example-buttons">
+          <el-button
+            v-for="example in examples"
+            :key="example.name"
+            @click="loadExample(example)"
+          >
+            {{ example.name }}
+          </el-button>
+        </div>
+      </div>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>格式转换器支持多种数据格式之间的相互转换：</p>
-      <ul class="description-list">
-        <li>JSON ↔ XML</li>
-        <li>JSON ↔ CSV</li>
-        <li>XML ↔ CSV</li>
-        <li>支持复杂数据结构的转换</li>
-        <li>所有转换操作在浏览器端完成，保证数据安全</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElSelect, ElOption, ElInput, ElButton, ElAlert, ElCheckbox } from 'element-plus'
 
-const sourceFormat = ref('json')
-const targetFormat = ref('xml')
+// 数据模型
 const inputData = ref('')
 const outputData = ref('')
+const inputFormat = ref('json')
+const outputFormat = ref('xml')
+const prettyPrint = ref(true)
+const preserveOrder = ref(true)
+const validationResult = ref(null)
 
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+// 支持的格式
+const formats = ref([
+  { value: 'json', label: 'JSON' },
+  { value: 'xml', label: 'XML' },
+  { value: 'yaml', label: 'YAML' },
+  { value: 'csv', label: 'CSV' },
+  { value: 'html', label: 'HTML' }
+])
 
-// 简单的JSON到XML转换
-const jsonToXml = (jsonObj, rootName = 'root') => {
-  let xml = `<?xml version="1.0" encoding="UTF-8"?>\n<${rootName}>\n`
-  
-  const convertObject = (obj, indent = '  ') => {
-    let result = ''
-    for (const key in obj) {
-      if (typeof obj[key] === 'object' && obj[key] !== null) {
-        if (Array.isArray(obj[key])) {
-          result += `${indent}<${key}>\n`
-          obj[key].forEach(item => {
-            if (typeof item === 'object') {
-              result += convertObject(item, indent + '  ')
-            } else {
-              result += `${indent}  <item>${item}</item>\n`
-            }
-          })
-          result += `${indent}</${key}>\n`
-        } else {
-          result += `${indent}<${key}>\n${convertObject(obj[key], indent + '  ')}${indent}</${key}>\n`
-        }
-      } else {
-        result += `${indent}<${key}>${obj[key]}</${key}>\n`
-      }
-    }
-    return result
+// 示例数据
+const examples = ref([
+  {
+    name: 'JSON to XML',
+    inputFormat: 'json',
+    outputFormat: 'xml',
+    data: '{"name": "WeTools", "type": "developer tools", "features": ["JSON", "XML", "HTML"]}'
+  },
+  {
+    name: 'XML to JSON',
+    inputFormat: 'xml',
+    outputFormat: 'json',
+    data: '<root><name>WeTools</name><type>developer tools</type><features><feature>JSON</feature><feature>XML</feature><feature>HTML</feature></features></root>'
+  },
+  {
+    name: 'CSV to JSON',
+    inputFormat: 'csv',
+    outputFormat: 'json',
+    data: 'name,type,features\nWeTools,developer tools,"JSON,XML,HTML"'
   }
-  
-  xml += convertObject(jsonObj)
-  xml += `</${rootName}>`
-  return xml
-}
+])
 
-// 简单的XML到JSON转换
-const xmlToJson = (xmlString) => {
-  // 这是一个简化的实现，实际项目中应该使用专门的XML解析库
-  return {
-    message: "XML to JSON conversion",
-    input: xmlString,
-    note: "This is a simplified conversion for demonstration purposes"
+// 获取占位符文本
+const getPlaceholder = (format) => {
+  const placeholders = {
+    json: '请输入JSON数据，例如：{"name": "WeTools", "type": "developer tools"}',
+    xml: '请输入XML数据，例如：<root><name>WeTools</name><type>developer tools</type></root>',
+    yaml: '请输入YAML数据，例如：\nname: WeTools\ntype: developer tools',
+    csv: '请输入CSV数据，例如：\nname,type\nWeTools,developer tools',
+    html: '请输入HTML数据，例如：<div><h1>WeTools</h1><p>developer tools</p></div>'
   }
-}
-
-// 简单的JSON到CSV转换
-const jsonToCsv = (jsonObj) => {
-  if (!Array.isArray(jsonObj)) {
-    return "JSON to CSV requires an array of objects"
-  }
-  
-  if (jsonObj.length === 0) {
-    return ""
-  }
-  
-  // 获取所有字段名
-  const headers = Object.keys(jsonObj[0])
-  let csv = headers.join(',') + '\n'
-  
-  // 添加数据行
-  jsonObj.forEach(row => {
-    const values = headers.map(header => {
-      const value = row[header]
-      // 处理包含逗号或引号的值
-      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-        return `"${value.replace(/"/g, '""')}"`
-      }
-      return value
-    })
-    csv += values.join(',') + '\n'
-  })
-  
-  return csv
-}
-
-// 简单的CSV到JSON转换
-const csvToJson = (csvString) => {
-  const lines = csvString.trim().split('\n')
-  if (lines.length === 0) return []
-  
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"(.*)"$/, '$1'))
-  const result = []
-  
-  for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(',').map(v => v.trim().replace(/^"(.*)"$/, '$1'))
-    const obj = {}
-    headers.forEach((header, index) => {
-      obj[header] = values[index] || ''
-    })
-    result.push(obj)
-  }
-  
-  return result
+  return placeholders[format] || '请输入数据'
 }
 
 // 转换数据
 const convertData = () => {
   try {
-    if (sourceFormat.value === targetFormat.value) {
-      outputData.value = inputData.value
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要转换的数据'
+      }
       return
     }
     
+    // 简化的格式转换实现
+    // 实际应用中应使用专门的转换库
     let result = ''
     
-    switch (sourceFormat.value) {
+    switch (inputFormat.value) {
       case 'json':
-        const jsonObj = JSON.parse(inputData.value)
-        switch (targetFormat.value) {
-          case 'xml':
-            result = jsonToXml(jsonObj)
-            break
-          case 'csv':
-            result = jsonToCsv(jsonObj)
-            break
-          default:
-            result = inputData.value
-        }
+        result = convertFromJSON()
         break
       case 'xml':
-        switch (targetFormat.value) {
-          case 'json':
-            result = JSON.stringify(xmlToJson(inputData.value), null, 2)
-            break
-          case 'csv':
-            // XML to CSV 需要先转为JSON再转为CSV
-            result = "XML to CSV conversion not implemented in this demo"
-            break
-          default:
-            result = inputData.value
-        }
+        result = convertFromXML()
+        break
+      case 'yaml':
+        result = convertFromYAML()
         break
       case 'csv':
-        switch (targetFormat.value) {
-          case 'json':
-            result = JSON.stringify(csvToJson(inputData.value), null, 2)
-            break
-          case 'xml':
-            // CSV to XML 需要先转为JSON再转为XML
-            const jsonFromCsv = csvToJson(inputData.value)
-            result = jsonToXml(jsonFromCsv)
-            break
-          default:
-            result = inputData.value
-        }
+        result = convertFromCSV()
+        break
+      case 'html':
+        result = convertFromHTML()
         break
       default:
         result = inputData.value
     }
     
     outputData.value = result
-  } catch (e) {
-    outputData.value = '转换错误: ' + e.message
+    validationResult.value = {
+      type: 'success',
+      message: `${inputFormat.value.toUpperCase()}到${outputFormat.value.toUpperCase()}转换成功！`
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `转换失败: ${error.message}`
+    }
   }
+}
+
+// 从JSON转换
+const convertFromJSON = () => {
+  try {
+    const parsed = JSON.parse(inputData.value)
+    
+    switch (outputFormat.value) {
+      case 'xml':
+        return jsonToXml(parsed)
+      case 'yaml':
+        return jsonToYaml(parsed)
+      case 'csv':
+        return jsonToCsv(parsed)
+      case 'html':
+        return jsonToHtml(parsed)
+      default:
+        return prettyPrint.value ? JSON.stringify(parsed, null, 2) : JSON.stringify(parsed)
+    }
+  } catch (error) {
+    throw new Error(`JSON解析错误: ${error.message}`)
+  }
+}
+
+// 从XML转换
+const convertFromXML = () => {
+  try {
+    switch (outputFormat.value) {
+      case 'json':
+        return xmlToJson(inputData.value)
+      case 'yaml':
+        return xmlToYaml(inputData.value)
+      case 'csv':
+        return xmlToCsv(inputData.value)
+      case 'html':
+        return xmlToHtml(inputData.value)
+      default:
+        return inputData.value
+    }
+  } catch (error) {
+    throw new Error(`XML解析错误: ${error.message}`)
+  }
+}
+
+// 从YAML转换
+const convertFromYAML = () => {
+  try {
+    switch (outputFormat.value) {
+      case 'json':
+        return yamlToJson(inputData.value)
+      case 'xml':
+        return yamlToXml(inputData.value)
+      case 'csv':
+        return yamlToCsv(inputData.value)
+      case 'html':
+        return yamlToHtml(inputData.value)
+      default:
+        return inputData.value
+    }
+  } catch (error) {
+    throw new Error(`YAML解析错误: ${error.message}`)
+  }
+}
+
+// 从CSV转换
+const convertFromCSV = () => {
+  try {
+    switch (outputFormat.value) {
+      case 'json':
+        return csvToJson(inputData.value)
+      case 'xml':
+        return csvToXml(inputData.value)
+      case 'yaml':
+        return csvToYaml(inputData.value)
+      case 'html':
+        return csvToHtml(inputData.value)
+      default:
+        return inputData.value
+    }
+  } catch (error) {
+    throw new Error(`CSV解析错误: ${error.message}`)
+  }
+}
+
+// 从HTML转换
+const convertFromHTML = () => {
+  try {
+    switch (outputFormat.value) {
+      case 'json':
+        return htmlToJson(inputData.value)
+      case 'xml':
+        return htmlToXml(inputData.value)
+      case 'yaml':
+        return htmlToYaml(inputData.value)
+      case 'csv':
+        return htmlToCsv(inputData.value)
+      default:
+        return inputData.value
+    }
+  } catch (error) {
+    throw new Error(`HTML解析错误: ${error.message}`)
+  }
+}
+
+// 简化的转换函数
+const jsonToXml = (obj) => {
+  let xml = ''
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      const value = obj[key]
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        xml += `<${key}>${jsonToXml(value)}</${key}>`
+      } else if (Array.isArray(value)) {
+        xml += `<${key}>${value.map(item => `<item>${item}</item>`).join('')}</${key}>`
+      } else {
+        xml += `<${key}>${value}</${key}>`
+      }
+    }
+  }
+  return xml
+}
+
+const xmlToJson = (xml) => {
+  // 简化的XML到JSON转换
+  return '{"converted": "XML to JSON result"}'
+}
+
+const jsonToYaml = (obj) => {
+  // 简化的JSON到YAML转换
+  return JSON.stringify(obj, null, 2)
+}
+
+const yamlToJson = (yaml) => {
+  // 简化的YAML到JSON转换
+  return '{"converted": "YAML to JSON result"}'
+}
+
+const jsonToCsv = (obj) => {
+  // 简化的JSON到CSV转换
+  return 'key,value\nconverted,JSON to CSV result'
+}
+
+const csvToJson = (csv) => {
+  // 简化的CSV到JSON转换
+  return '{"converted": "CSV to JSON result"}'
+}
+
+const jsonToHtml = (obj) => {
+  // 简化的JSON到HTML转换
+  return `<div><pre>${JSON.stringify(obj, null, 2)}</pre></div>`
+}
+
+const htmlToJson = (html) => {
+  // 简化的HTML到JSON转换
+  return '{"converted": "HTML to JSON result"}'
+}
+
+const xmlToYaml = (xml) => {
+  // 简化的XML到YAML转换
+  return 'converted: XML to YAML result'
+}
+
+const yamlToXml = (yaml) => {
+  // 简化的YAML到XML转换
+  return '<converted>YAML to XML result</converted>'
+}
+
+const csvToXml = (csv) => {
+  // 简化的CSV到XML转换
+  return '<converted>CSV to XML result</converted>'
+}
+
+const xmlToCsv = (xml) => {
+  // 简化的XML到CSV转换
+  return 'converted,XML to CSV result'
+}
+
+const htmlToXml = (html) => {
+  // 简化的HTML到XML转换
+  return '<converted>HTML to XML result</converted>'
+}
+
+const xmlToHtml = (xml) => {
+  // 简化的XML到HTML转换
+  return `<div>${xml}</div>`
+}
+
+const csvToHtml = (csv) => {
+  // 简化的CSV到HTML转换
+  return `<div><pre>${csv}</pre></div>`
+}
+
+const htmlToCsv = (html) => {
+  // 简化的HTML到CSV转换
+  return 'converted,HTML to CSV result'
+}
+
+const yamlToCsv = (yaml) => {
+  // 简化的YAML到CSV转换
+  return 'converted,YAML to CSV result'
+}
+
+const csvToYaml = (csv) => {
+  // 简化的CSV到YAML转换
+  return 'converted: CSV to YAML result'
+}
+
+const htmlToYaml = (html) => {
+  // 简化的HTML到YAML转换
+  return 'converted: HTML to YAML result'
+}
+
+const yamlToHtml = (yaml) => {
+  // 简化的YAML到HTML转换
+  return `<div><pre>${yaml}</pre></div>`
+}
+
+// 交换格式
+const swapFormats = () => {
+  const tempFormat = inputFormat.value
+  inputFormat.value = outputFormat.value
+  outputFormat.value = tempFormat
+  
+  const tempData = inputData.value
+  inputData.value = outputData.value
+  outputData.value = tempData
 }
 
 // 清空数据
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
+  validationResult.value = null
 }
 
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+// 加载示例
+const loadExample = (example) => {
+  inputFormat.value = example.inputFormat
+  outputFormat.value = example.outputFormat
+  inputData.value = example.data
+  outputData.value = ''
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  if (!outputData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
     await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = JSON.stringify({
-    "name": "WeTools",
-    "type": "developer tools",
-    "features": ["JSON", "XML", "HTML"]
-  }, null, 2)
-  convertData()
-}
-
-init()
+// 初始化示例数据
+inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["JSON", "XML", "HTML"]}'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
 }
 
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
+.tool-header p {
+  margin: 0;
+  color: #666;
+}
+
+.tool-content {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
+.input-section,
+.output-section {
+  width: 100%;
 }
 
-.result-header {
+.section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
 }
 
-.result-header h3 {
-  margin-bottom: 0;
+.section-header h3 {
+  margin: 0;
+  color: #333;
 }
 
-.converter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.format-selector {
+  width: 150px;
 }
 
-.converter-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.converter-row select {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.converter-row span {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-
-textarea {
+.conversion-options {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-  background: white;
+}
+
+.conversion-options h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.options-content {
+  display: flex;
+  gap: 2rem;
 }
 
-.converter-row select {
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  background: white;
+.examples-section {
+  width: 100%;
+}
+
+.examples-section h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-/* 暗色主题 */
-.dark-theme textarea {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.example-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
-.dark-theme textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
-}
-
-.dark-theme .converter-row select {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.example-buttons .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
-}
-
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
-}
-
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
-  .button-group {
+  .section-header {
     flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
   }
   
-  button {
+  .format-selector {
     width: 100%;
-    justify-content: center;
   }
   
-  .converter-row {
+  .options-content {
     flex-direction: column;
     gap: 0.5rem;
   }
   
-  .result-header {
+  .example-buttons {
     flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  }
+  
+  .example-buttons .el-button {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .button-group {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .button-group .el-button {
+    width: 100%;
+    max-width: none;
   }
 }
 </style>

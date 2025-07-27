@@ -1,100 +1,172 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入URL</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入URL或参数"
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>URL 编码/解码工具</h2>
+      <p>URL编码解码工具，支持URL参数解析</p>
     </div>
-
-    <div class="button-group">
-      <button @click="encodeUrl">
-        <i class="fas fa-lock"></i> URL编码
-      </button>
-      <button @click="decodeUrl">
-        <i class="fas fa-unlock"></i> URL解码
-      </button>
-      <button @click="parseUrl">
-        <i class="fas fa-search"></i> 解析URL
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="input-section">
+            <el-input
+              v-model="inputData"
+              type="textarea"
+              :rows="8"
+              placeholder="请输入要编码或解码的URL或文本"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="encodeUrl">
+          <i class="fas fa-lock"></i> URL编码
+        </el-button>
+        <el-button @click="decodeUrl">
+          <i class="fas fa-unlock"></i> URL解码
+        </el-button>
+        <el-button @click="parseUrlParams">
+          <i class="fas fa-search"></i> 解析URL参数
+        </el-button>
+        <el-button @click="clearData">
+          <i class="fas fa-trash"></i> 清空
+        </el-button>
+        <el-button type="success" @click="copyResult">
+          <i class="fas fa-copy"></i> 复制结果
+        </el-button>
       </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="text"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
+      
+      <el-row :gutter="20">
+        <el-col :span="24">
+          <div class="output-section">
+            <el-input
+              v-model="outputData"
+              type="textarea"
+              :rows="8"
+              placeholder="转换结果将显示在这里"
+              resize="vertical"
+            />
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="params-section" v-if="urlParams.length > 0">
+        <h3>URL参数解析结果</h3>
+        <el-table :data="urlParams" style="width: 100%" border>
+          <el-table-column prop="key" label="参数名" width="180"></el-table-column>
+          <el-table-column prop="value" label="参数值"></el-table-column>
+        </el-table>
+      </div>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
+        />
+      </div>
     </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>URL编解码工具可以帮助您处理URL相关的编码和解析工作：</p>
-      <ul class="description-list">
-        <li>URL编码：将特殊字符转换为URL安全格式</li>
-        <li>URL解码：将编码后的URL还原为原始内容</li>
-        <li>URL解析：分析URL的各个组成部分</li>
-        <li>支持中文、特殊符号等各类字符</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ref } from 'vue'
+import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert, ElTable, ElTableColumn } from 'element-plus'
 
+// 数据模型
 const inputData = ref('')
 const outputData = ref('')
-
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
+const urlParams = ref([])
+const validationResult = ref(null)
 
 // URL编码
 const encodeUrl = () => {
   try {
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要编码的文本'
+      }
+      return
+    }
+    
     outputData.value = encodeURIComponent(inputData.value)
-  } catch (e) {
-    outputData.value = '编码错误: ' + e.message
+    urlParams.value = []
+    validationResult.value = {
+      type: 'success',
+      message: 'URL编码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `编码失败: ${error.message}`
+    }
   }
 }
 
 // URL解码
 const decodeUrl = () => {
   try {
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要解码的URL编码字符串'
+      }
+      return
+    }
+    
     outputData.value = decodeURIComponent(inputData.value)
-  } catch (e) {
-    outputData.value = '解码错误: ' + e.message
+    urlParams.value = []
+    validationResult.value = {
+      type: 'success',
+      message: 'URL解码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `解码失败: ${error.message}`
+    }
   }
 }
 
-// 解析URL
-const parseUrl = () => {
+// 解析URL参数
+const parseUrlParams = () => {
   try {
-    const url = new URL(inputData.value)
-    outputData.value = `协议: ${url.protocol}
-主机: ${url.hostname}
-端口: ${url.port}
-路径: ${url.pathname}
-查询参数: ${url.search}
-哈希: ${url.hash}`
-  } catch (e) {
-    outputData.value = 'URL解析错误: ' + e.message
+    if (!inputData.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入包含参数的URL'
+      }
+      return
+    }
+    
+    // 创建一个虚拟的a标签来解析URL
+    const a = document.createElement('a')
+    a.href = inputData.value
+    
+    // 获取查询参数
+    const params = new URLSearchParams(a.search)
+    const paramArray = []
+    
+    for (const [key, value] of params) {
+      paramArray.push({ key, value })
+    }
+    
+    urlParams.value = paramArray
+    outputData.value = JSON.stringify(Object.fromEntries(params), null, 2)
+    
+    validationResult.value = {
+      type: 'success',
+      message: `成功解析到 ${paramArray.length} 个参数！`
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `URL参数解析失败: ${error.message}`
+    }
   }
 }
 
@@ -102,185 +174,103 @@ const parseUrl = () => {
 const clearData = () => {
   inputData.value = ''
   outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
+  urlParams.value = []
+  validationResult.value = null
 }
 
 // 复制结果
 const copyResult = async () => {
+  if (!outputData.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
   try {
     await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  inputData.value = 'https://www.example.com/search?q=WeTools工具箱&lang=zh-CN'
-  parseUrl()
-}
-
-init()
+// 初始化示例数据
+inputData.value = 'https://example.com/search?q=hello world&category=tools&page=1'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
+  color: #333;
 }
 
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
+.tool-header p {
+  margin: 0;
+  color: #666;
+}
+
+.tool-content {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
+.input-section,
+.output-section {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-}
-
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
+.params-section {
+  width: 100%;
 }
 
-button.secondary {
-  background: #f1f5f9;
+.params-section h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
-}
-
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
-}
-
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+    max-width: none;
   }
 }
 </style>
