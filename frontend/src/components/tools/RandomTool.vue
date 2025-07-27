@@ -1,369 +1,342 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-sliders-h"></i> 配置选项</h3>
-      <div class="config-group">
-        <label>长度:</label>
-        <input 
-          v-model.number="length" 
-          type="number" 
-          min="1" 
-          max="1000" 
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>随机字符串生成器</h2>
+      <p>自定义长度和字符集的随机字符串生成器</p>
+    </div>
+    
+    <div class="tool-content">
+      <el-row :gutter="20">
+        <el-col :span="12">
+          <div class="length-section">
+            <el-form-item label="字符串长度">
+              <el-input-number
+                v-model="length"
+                :min="1"
+                :max="1000"
+                controls-position="right"
+              />
+            </el-form-item>
+          </div>
+        </el-col>
+        <el-col :span="12">
+          <div class="count-section">
+            <el-form-item label="生成数量">
+              <el-input-number
+                v-model="count"
+                :min="1"
+                :max="100"
+                controls-position="right"
+              />
+            </el-form-item>
+          </div>
+        </el-col>
+      </el-row>
+      
+      <div class="charset-section">
+        <h3>字符集选择</h3>
+        <div class="charset-options">
+          <el-checkbox v-model="charsets.uppercase">大写字母 (A-Z)</el-checkbox>
+          <el-checkbox v-model="charsets.lowercase">小写字母 (a-z)</el-checkbox>
+          <el-checkbox v-model="charsets.numbers">数字 (0-9)</el-checkbox>
+          <el-checkbox v-model="charsets.symbols">符号 (!@#$%^&*)</el-checkbox>
+        </div>
+        
+        <div class="custom-charset">
+          <el-input
+            v-model="customCharset"
+            placeholder="自定义字符集 (可选)"
+          />
+        </div>
+      </div>
+      
+      <div class="button-group">
+        <el-button type="primary" @click="generateRandomStrings">
+          <i class="fas fa-random"></i> 生成随机字符串
+        </el-button>
+        <el-button @click="clearResults">
+          <i class="fas fa-trash"></i> 清空结果
+        </el-button>
+        <el-button type="success" @click="copyAllResults">
+          <i class="fas fa-copy"></i> 复制所有结果
+        </el-button>
+      </div>
+      
+      <div class="results-section" v-if="results.length > 0">
+        <h3>生成结果</h3>
+        <div class="results-list">
+          <div
+            v-for="(result, index) in results"
+            :key="index"
+            class="result-item"
+          >
+            <el-input
+              v-model="results[index]"
+              readonly
+            />
+            <el-button
+              type="success"
+              icon="fas fa-copy"
+              @click="copySingleResult(index)"
+              circle
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
         />
       </div>
-      
-      <div class="config-group">
-        <label>
-          <input 
-            v-model="includeUppercase" 
-            type="checkbox" 
-          /> 大写字母 (A-Z)
-        </label>
-      </div>
-      
-      <div class="config-group">
-        <label>
-          <input 
-            v-model="includeLowercase" 
-            type="checkbox" 
-          /> 小写字母 (a-z)
-        </label>
-      </div>
-      
-      <div class="config-group">
-        <label>
-          <input 
-            v-model="includeNumbers" 
-            type="checkbox" 
-          /> 数字 (0-9)
-        </label>
-      </div>
-      
-      <div class="config-group">
-        <label>
-          <input 
-            v-model="includeSymbols" 
-            type="checkbox" 
-          /> 特殊符号 (!@#$%^&*)
-        </label>
-      </div>
     </div>
-
-    <div class="button-group">
-      <button @click="generateRandomString">
-        <i class="fas fa-random"></i> 生成随机字符串
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 生成结果</h3>
-      </div>
-      <CodeBlock 
-        :code="outputData" 
-        language="text"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
-    </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>随机字符串生成器可以根据自定义规则生成安全的随机字符串：</p>
-      <ul class="description-list">
-        <li>支持自定义字符串长度</li>
-        <li>可选择包含大写字母、小写字母、数字、特殊符号</li>
-        <li>适用于密码、验证码、API密钥等场景</li>
-        <li>所有生成操作在浏览器端完成，保证安全性</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import CodeBlock from '../CodeBlock.vue'
+import { ElCard, ElRow, ElCol, ElFormItem, ElInputNumber, ElCheckbox, ElInput, ElButton, ElAlert } from 'element-plus'
 
+// 数据模型
 const length = ref(16)
-const includeUppercase = ref(true)
-const includeLowercase = ref(true)
-const includeNumbers = ref(true)
-const includeSymbols = ref(true)
-const outputData = ref('')
+const count = ref(1)
+const charsets = ref({
+  uppercase: true,
+  lowercase: true,
+  numbers: true,
+  symbols: false
+})
+const customCharset = ref('')
+const results = ref([])
+const validationResult = ref(null)
 
 // 生成随机字符串
-const generateRandomString = () => {
+const generateRandomStrings = async () => {
   try {
-    let charset = ''
-    if (includeUppercase.value) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    if (includeLowercase.value) charset += 'abcdefghijklmnopqrstuvwxyz'
-    if (includeNumbers.value) charset += '0123456789'
-    if (includeSymbols.value) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?'
+    // 检查是否选择了字符集
+    const hasDefaultCharset = charsets.value.uppercase || charsets.value.lowercase || 
+                             charsets.value.numbers || charsets.value.symbols
+    const hasCustomCharset = customCharset.value.trim() !== ''
     
-    if (!charset) {
-      outputData.value = '请至少选择一种字符类型'
+    if (!hasDefaultCharset && !hasCustomCharset) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请至少选择一个字符集或输入自定义字符集'
+      }
       return
     }
     
-    let result = ''
-    const values = new Uint32Array(length.value)
-    crypto.getRandomValues(values)
-    
-    for (let i = 0; i < length.value; i++) {
-      result += charset[values[i] % charset.length]
+    // 构建字符集
+    let charset = ''
+    if (hasCustomCharset) {
+      charset = customCharset.value
+    } else {
+      if (charsets.value.uppercase) charset += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      if (charsets.value.lowercase) charset += 'abcdefghijklmnopqrstuvwxyz'
+      if (charsets.value.numbers) charset += '0123456789'
+      if (charsets.value.symbols) charset += '!@#$%^&*()_+-=[]{}|;:,.<>?'
     }
     
-    outputData.value = result
-  } catch (e) {
-    outputData.value = '生成错误: ' + e.message
+    // 生成随机字符串
+    const generatedResults = []
+    for (let i = 0; i < count.value; i++) {
+      let result = ''
+      // 使用Web Crypto API生成更安全的随机数
+      const randomBytes = new Uint8Array(length.value)
+      if (window.crypto && window.crypto.getRandomValues) {
+        // 使用Web Crypto API
+        window.crypto.getRandomValues(randomBytes)
+        for (let j = 0; j < length.value; j++) {
+          const randomIndex = randomBytes[j] % charset.length
+          result += charset.charAt(randomIndex)
+        }
+      } else {
+        // 降级到Math.random()
+        for (let j = 0; j < length.value; j++) {
+          const randomIndex = Math.floor(Math.random() * charset.length)
+          result += charset.charAt(randomIndex)
+        }
+      }
+      generatedResults.push(result)
+    }
+    
+    results.value = generatedResults
+    validationResult.value = {
+      type: 'success',
+      message: `成功生成${count.value}个随机字符串！`
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `生成失败: ${error.message}`
+    }
   }
 }
 
-// 清空数据
-const clearData = () => {
-  outputData.value = ''
+// 清空结果
+const clearResults = () => {
+  results.value = []
+  validationResult.value = null
 }
 
-// 复制结果
-const copyResult = async () => {
+// 复制单个结果
+const copySingleResult = async (index) => {
   try {
-    await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
+    await navigator.clipboard.writeText(results.value[index])
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
-// 初始化数据
-const init = () => {
-  generateRandomString()
+// 复制所有结果
+const copyAllResults = async () => {
+  if (results.value.length === 0) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    const allResults = results.value.join('\n')
+    await navigator.clipboard.writeText(allResults)
+    validationResult.value = {
+      type: 'success',
+      message: '所有结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
+  }
 }
 
-init()
+// 初始化示例数据
+length.value = 16
+count.value = 5
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-.config-group {
-  margin-bottom: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.config-group label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
-
-input[type="number"] {
-  width: 80px;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-input[type="number"]:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-/* 暗色主题 */
-.dark-theme input[type="number"] {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.length-section,
+.count-section {
+  width: 100%;
 }
 
-.dark-theme input[type="number"]:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+.charset-section {
+  width: 100%;
+}
+
+.charset-section h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.charset-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.custom-charset {
+  width: 100%;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
 }
 
-button:hover {
-  background: #5a6fd8;
+.results-section {
+  width: 100%;
 }
 
-button.secondary {
-  background: #f1f5f9;
+.results-section h3 {
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 1rem;
-  min-height: 50px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 200px;
-}
-
-.result-footer {
+.results-list {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+  flex-direction: column;
+  gap: 1rem;
 }
 
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.result-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.result-item .el-input {
+  flex: 1;
+}
+
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
+    max-width: none;
   }
   
-  .config-group {
+  .result-item {
     flex-direction: column;
-    align-items: flex-start;
   }
   
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .result-item .el-button {
+    align-self: flex-end;
   }
 }
 </style>
