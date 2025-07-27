@@ -90,15 +90,6 @@
         
         <el-tab-pane label="解析二维码" name="decode">
           <div class="decode-section">
-            <div class="paste-area">
-              <el-input
-                type="textarea"
-                :rows="3"
-                placeholder="粘贴二维码图片或上传文件"
-                @paste="handlePaste"
-              />
-            </div>
-            
             <div class="file-upload-area">
               <el-upload
                 drag
@@ -115,6 +106,11 @@
                   支持 JPG、PNG 格式的二维码图片，可直接粘贴图片
                 </div>
               </el-upload>
+            </div>
+            
+            <div class="image-preview" v-if="qrImagePreview">
+              <h3>图片预览</h3>
+              <img :src="qrImagePreview" alt="二维码图片预览" />
             </div>
             
             <div class="button-group">
@@ -160,6 +156,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElFormItem, ElInput, ElSlider, ElSelect, ElOption, ElColorPicker, ElButton, ElAlert, ElUpload } from 'element-plus'
 import QRCode from 'qrcode'
+import jsQR from 'jsqr'
 
 // 数据模型
 const activeTab = ref('generate')
@@ -170,6 +167,7 @@ const qrForegroundColor = ref('#000000')
 const qrBackgroundColor = ref('#ffffff')
 const qrCodeUrl = ref('')
 const qrImageFile = ref(null)
+const qrImagePreview = ref('')
 const decodedData = ref('')
 const validationResult = ref(null)
 
@@ -249,6 +247,12 @@ const downloadQRCode = () => {
 // 处理二维码图片上传
 const handleQRImageUpload = (file) => {
   qrImageFile.value = file.raw
+  // 创建图片预览
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    qrImagePreview.value = e.target.result
+  }
+  reader.readAsDataURL(file.raw)
   decodedData.value = ''
   validationResult.value = null
 }
@@ -259,9 +263,17 @@ const handlePaste = (event) => {
   for (let i = 0; i < items.length; i++) {
     if (items[i].type.indexOf('image') !== -1) {
       const blob = items[i].getAsFile()
-      qrImageFile.value = blob
-      decodedData.value = ''
-      validationResult.value = null
+      if (blob) {
+        qrImageFile.value = blob
+        // 创建图片预览
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          qrImagePreview.value = e.target.result
+        }
+        reader.readAsDataURL(blob)
+        decodedData.value = ''
+        validationResult.value = null
+      }
       break
     }
   }
@@ -278,20 +290,26 @@ const handleGlobalPaste = (event) => {
         const blob = items[i].getAsFile()
         if (blob) {
           qrImageFile.value = blob
+          // 创建图片预览
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            qrImagePreview.value = e.target.result
+          }
+          reader.readAsDataURL(blob)
           decodedData.value = ''
           validationResult.value = {
             type: 'success',
             message: '图片已粘贴！'
           }
-          break
         }
+        break
       }
     }
   }
 }
 
 // 解析二维码
-const decodeQRCode = async () => {
+const decodeQRCode = () => {
   if (!qrImageFile.value) {
     validationResult.value = {
       type: 'warning',
@@ -301,36 +319,53 @@ const decodeQRCode = async () => {
   }
   
   try {
-    // 使用在线API解析二维码
-    const formData = new FormData()
-    formData.append('file', qrImageFile.value)
-    
-    const response = await fetch('https://api.qrserver.com/v1/read-qr-code/', {
-      method: 'POST',
-      body: formData
-    })
-    
-    const result = await response.json()
-    
-    if (result && result[0] && result[0].symbol && result[0].symbol[0]) {
-      if (result[0].symbol[0].data) {
-        decodedData.value = result[0].symbol[0].data
-        validationResult.value = {
-          type: 'success',
-          message: '二维码解析成功！'
-        }
-      } else {
-        validationResult.value = {
-          type: 'warning',
-          message: '未在二维码中找到有效数据'
+    // 使用FileReader读取图片文件
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      // 创建图片元素来获取尺寸
+      const img = new Image()
+      img.onload = () => {
+        // 创建canvas来处理图片
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        canvas.width = img.width
+        canvas.height = img.height
+        ctx.drawImage(img, 0, 0, img.width, img.height)
+        
+        // 获取图片数据
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        
+        // 使用jsQR解析二维码
+        const code = jsQR(imageData.data, imageData.width, imageData.height)
+        
+        if (code) {
+          decodedData.value = code.data
+          validationResult.value = {
+            type: 'success',
+            message: '二维码解析成功！'
+          }
+        } else {
+          validationResult.value = {
+            type: 'error',
+            message: '未找到有效的二维码'
+          }
         }
       }
-    } else {
+      img.onerror = () => {
+        validationResult.value = {
+          type: 'error',
+          message: '图片加载失败'
+        }
+      }
+      img.src = e.target.result
+    }
+    reader.onerror = () => {
       validationResult.value = {
         type: 'error',
-        message: '二维码解析失败'
+        message: '图片读取失败'
       }
     }
+    reader.readAsDataURL(qrImageFile.value)
   } catch (error) {
     validationResult.value = {
       type: 'error',
@@ -342,6 +377,7 @@ const decodeQRCode = async () => {
 // 清空解析数据
 const clearDecodeData = () => {
   qrImageFile.value = null
+  qrImagePreview.value = ''
   decodedData.value = ''
   validationResult.value = null
 }
@@ -483,6 +519,26 @@ onUnmounted(() => {
 .decode-result h3 {
   margin: 0 0 1rem 0;
   color: #333;
+}
+
+.image-preview {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.image-preview h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
 }
 
 .validation-result {
