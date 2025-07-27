@@ -1,182 +1,408 @@
 <template>
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-edit"></i> 输入内容</h3>
-      <textarea 
-        v-model="inputData" 
-        placeholder="请输入要编码/解码的内容"
-      ></textarea>
+  <el-card class="tool-container" shadow="never">
+    <div class="tool-header">
+      <h2>Base64 编码/解码工具</h2>
+      <p>Base64编码解码工具，支持文本和文件转换</p>
     </div>
-
-    <!-- 文件上传区域 -->
-    <div class="tool-section">
-      <h3><i class="fas fa-file-upload"></i> 文件上传</h3>
-      <div class="file-upload-area" @dragover.prevent @drop.prevent="handleFileDrop">
-        <input 
-          type="file" 
-          ref="fileInput" 
-          @change="handleFileSelect" 
-          style="display: none;"
+    
+    <div class="tool-content">
+      <el-tabs v-model="activeTab" class="tool-tabs">
+        <el-tab-pane label="文本转换" name="text">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="input-section">
+                <el-input
+                  v-model="textInput"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="请输入要编码或解码的文本"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="button-group">
+            <el-button type="primary" @click="encodeText">
+              <i class="fas fa-lock"></i> 编码为Base64
+            </el-button>
+            <el-button @click="decodeText">
+              <i class="fas fa-unlock"></i> 解码Base64
+            </el-button>
+            <el-button @click="clearText">
+              <i class="fas fa-trash"></i> 清空
+            </el-button>
+            <el-button type="success" @click="copyResult">
+              <i class="fas fa-copy"></i> 复制结果
+            </el-button>
+          </div>
+          
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="output-section">
+                <el-input
+                  v-model="textOutput"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="转换结果将显示在这里"
+                  resize="vertical"
+                />
+              </div>
+            </el-col>
+          </el-row>
+        </el-tab-pane>
+        
+        <el-tab-pane label="文件转换" name="file">
+          <div class="file-conversion-section">
+            <div class="file-upload-area">
+              <el-upload
+                drag
+                :auto-upload="false"
+                :show-file-list="false"
+                :on-change="handleFileChange"
+                @paste="handlePaste"
+              >
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div class="el-upload__text">
+                  将文件拖到此处，或<em>点击上传</em>
+                </div>
+                <div class="el-upload__tip">
+                  支持所有文件类型，可直接粘贴图片或文件
+                </div>
+              </el-upload>
+            </div>
+            
+            <div class="file-info" v-if="fileInfo">
+              <el-descriptions title="文件信息" :column="1" border>
+                <el-descriptions-item label="文件名">{{ fileInfo.name }}</el-descriptions-item>
+                <el-descriptions-item label="文件大小">{{ formatFileSize(fileInfo.size) }}</el-descriptions-item>
+                <el-descriptions-item label="文件类型">{{ fileInfo.type }}</el-descriptions-item>
+              </el-descriptions>
+            </div>
+            
+            <div class="base64-input" v-if="activeTab === 'file'">
+              <el-input
+                v-model="base64Input"
+                type="textarea"
+                :rows="6"
+                placeholder="粘贴Base64字符串以转换为文件"
+                resize="vertical"
+              />
+              <div class="button-group">
+                <el-button type="primary" @click="decodeBase64String">
+                  <i class="fas fa-file-download"></i> Base64转文件
+                </el-button>
+              </div>
+            </div>
+            
+            <div class="button-group">
+              <el-button type="primary" @click="encodeFile" :disabled="!fileInfo">
+                <i class="fas fa-lock"></i> 文件转Base64
+              </el-button>
+              <el-button @click="clearFile">
+                <i class="fas fa-trash"></i> 清空
+              </el-button>
+              <el-button type="success" @click="downloadFile" :disabled="!decodedFileContent && !decodedFromBase64">
+                <i class="fas fa-download"></i> 下载文件
+              </el-button>
+            </div>
+            
+            <div class="file-result" v-if="fileResult || decodedFileName">
+              <el-input
+                v-model="fileResult"
+                type="textarea"
+                :rows="6"
+                placeholder="Base64编码结果将显示在这里"
+                resize="vertical"
+              />
+              <div class="decoded-file-info" v-if="decodedFileName">
+                <p>解码文件名: {{ decodedFileName }}</p>
+                <p>解码文件大小: {{ formatFileSize(decodedFileSize) }}</p>
+              </div>
+            </div>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+      
+      <div class="validation-result" v-if="validationResult">
+        <el-alert
+          :type="validationResult.type"
+          :title="validationResult.message"
+          show-icon
+          :closable="false"
         />
-        <div class="upload-content" @click="triggerFileInput">
-          <i class="fas fa-cloud-upload-alt upload-icon"></i>
-          <p>点击选择文件或拖拽文件到此处</p>
-          <p class="file-info" v-if="selectedFile">{{ selectedFile.name }} ({{ formatFileSize(selectedFile.size) }})</p>
-        </div>
       </div>
     </div>
-
-    <div class="button-group">
-      <button @click="encodeBase64">
-        <i class="fas fa-lock"></i> Base64编码
-      </button>
-      <button @click="decodeBase64">
-        <i class="fas fa-unlock"></i> Base64解码
-      </button>
-      <button @click="encodeFileToBase64">
-        <i class="fas fa-file-image"></i> 文件转Base64
-      </button>
-      <button @click="decodeBase64ToFile">
-        <i class="fas fa-file-download"></i> Base64转文件
-      </button>
-      <button class="copy-btn" @click="copyInput">
-        <i class="fas fa-copy"></i> 复制输入
-      </button>
-      <button class="secondary" @click="clearData">
-        <i class="fas fa-trash"></i> 清空
-      </button>
-    </div>
-
-    <div class="tool-section">
-      <div class="result-header">
-        <h3><i class="fas fa-file-alt"></i> 输出结果</h3>
-      </div>
-      <div v-if="outputImage" class="image-preview">
-        <img :src="outputImage" alt="预览图片" />
-      </div>
-      <div v-else class="result">{{ outputData }}</div>
-      <CodeBlock 
-        v-if="outputData && !outputImage && !isValidationResult"
-        :code="outputData" 
-        language="text"
-        :show-line-numbers="true"
-        :show-header="true"
-      />
-    </div>
-  </div>
-
-  <div class="tool-container">
-    <div class="tool-section">
-      <h3><i class="fas fa-info-circle"></i> 工具说明</h3>
-      <p>Base64是一种基于64个可打印字符来表示二进制数据的表示方法。本工具可以帮助您：</p>
-      <ul class="description-list">
-        <li>将文本或二进制数据编码为Base64格式</li>
-        <li>将Base64编码的数据解码为原始内容</li>
-        <li>支持文件转Base64和Base64转文件</li>
-        <li>支持图片预览功能</li>
-        <li>支持中文、英文、特殊字符等各类内容</li>
-      </ul>
-    </div>
-  </div>
+  </el-card>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
+import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElInput, ElButton, ElAlert, ElUpload, ElDescriptions, ElDescriptionsItem } from 'element-plus'
 
-const inputData = ref('')
-const outputData = ref('')
-const selectedFile = ref(null)
-const outputImage = ref('')
-const fileInput = ref(null)
+// 数据模型
+const activeTab = ref('text')
+const textInput = ref('')
+const textOutput = ref('')
+const fileInfo = ref(null)
+const fileResult = ref('')
+const base64Input = ref('')
+const decodedFileContent = ref(null)
+const decodedFromBase64 = ref(null)
+const decodedFileName = ref('')
+const decodedFileSize = ref(0)
+const validationResult = ref(null)
 
-// 判断是否为校验结果（不显示复制按钮）
-const isValidationResult = computed(() => {
-  return outputData.value.startsWith('✓') || outputData.value.startsWith('✗')
-})
-
-// Base64编码
-const encodeBase64 = () => {
+// 编码文本为Base64
+const encodeText = () => {
   try {
-    outputData.value = btoa(unescape(encodeURIComponent(inputData.value)))
-    // 如果是图片Base64，显示预览
-    if (outputData.value.startsWith('data:image')) {
-      outputImage.value = outputData.value
-    } else {
-      outputImage.value = ''
+    if (!textInput.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要编码的文本'
+      }
+      return
     }
-  } catch (e) {
-    outputData.value = '编码错误: ' + e.message
-    outputImage.value = ''
+    
+    textOutput.value = btoa(unescape(encodeURIComponent(textInput.value)))
+    validationResult.value = {
+      type: 'success',
+      message: '文本编码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `编码失败: ${error.message}`
+    }
   }
 }
 
-// Base64解码
-const decodeBase64 = () => {
+// 解码Base64文本
+const decodeText = () => {
   try {
-    outputData.value = decodeURIComponent(escape(atob(inputData.value)))
-    outputImage.value = ''
-  } catch (e) {
-    outputData.value = '解码错误: ' + e.message
-    outputImage.value = ''
+    if (!textInput.value.trim()) {
+      validationResult.value = {
+        type: 'warning',
+        message: '请输入要解码的Base64字符串'
+      }
+      return
+    }
+    
+    textOutput.value = decodeURIComponent(escape(atob(textInput.value)))
+    validationResult.value = {
+      type: 'success',
+      message: '文本解码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `解码失败: ${error.message}`
+    }
   }
 }
 
-// 触发文件选择
-const triggerFileInput = () => {
-  fileInput.value.click()
+// 清空文本数据
+const clearText = () => {
+  textInput.value = ''
+  textOutput.value = ''
+  validationResult.value = null
 }
 
-// 处理文件选择
-const handleFileSelect = (event) => {
-  const file = event.target.files[0]
-  if (file) {
-    selectedFile.value = file
+// 处理文件上传
+const handleFileChange = (file) => {
+  fileInfo.value = {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    raw: file.raw
+  }
+  fileResult.value = ''
+  decodedFileContent.value = null
+  validationResult.value = null
+}
+
+// 处理粘贴事件
+const handlePaste = (event) => {
+  const items = (event.clipboardData || event.originalEvent.clipboardData).items
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1 || items[i].type.indexOf('file') !== -1) {
+      const blob = items[i].getAsFile()
+      if (blob) {
+        fileInfo.value = {
+          name: blob.name || 'pasted-file',
+          size: blob.size,
+          type: blob.type,
+          raw: blob
+        }
+        fileResult.value = ''
+        decodedFileContent.value = null
+        validationResult.value = null
+        break
+      }
+    }
   }
 }
 
-// 处理文件拖拽
-const handleFileDrop = (event) => {
-  const file = event.dataTransfer.files[0]
-  if (file) {
-    selectedFile.value = file
-    fileInput.value.files = event.dataTransfer.files
-  }
-}
-
-// 文件转Base64
-const encodeFileToBase64 = () => {
-  if (!selectedFile.value) {
-    outputData.value = '请先选择文件'
+// 编码文件为Base64
+const encodeFile = () => {
+  if (!fileInfo.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '请先选择一个文件'
+    }
     return
   }
-
+  
   const reader = new FileReader()
   reader.onload = (e) => {
-    outputData.value = e.target.result
-    // 如果是图片文件，显示预览
-    if (selectedFile.value.type.startsWith('image/')) {
-      outputImage.value = e.target.result
-    } else {
-      outputImage.value = ''
+    try {
+      const base64String = e.target.result.split(',')[1] // 移除data:*/*;base64,前缀
+      fileResult.value = base64String
+      validationResult.value = {
+        type: 'success',
+        message: '文件编码成功！'
+      }
+    } catch (error) {
+      validationResult.value = {
+        type: 'error',
+        message: `文件编码失败: ${error.message}`
+      }
     }
   }
   reader.onerror = () => {
-    outputData.value = '文件读取错误'
-    outputImage.value = ''
+    validationResult.value = {
+      type: 'error',
+      message: '文件读取失败'
+    }
   }
-  reader.readAsDataURL(selectedFile.value)
+  reader.readAsDataURL(fileInfo.value.raw)
 }
 
-// Base64转文件
-const decodeBase64ToFile = () => {
+// 解码Base64字符串为文件
+const decodeBase64String = () => {
+  if (!base64Input.value.trim()) {
+    validationResult.value = {
+      type: 'warning',
+      message: '请输入Base64字符串'
+    }
+    return
+  }
+  
+  try {
+    // 尝试解析Base64字符串
+    const binaryString = atob(base64Input.value)
+    const bytes = new Uint8Array(binaryString.length)
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    
+    decodedFromBase64.value = new Blob([bytes])
+    decodedFileName.value = 'decoded-file.bin'
+    decodedFileSize.value = bytes.length
+    
+    validationResult.value = {
+      type: 'success',
+      message: 'Base64解码成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `Base64解码失败: ${error.message}`
+    }
+  }
+}
+
+// 下载文件
+const downloadFile = () => {
+  let blob, filename
+  
+  // 确定要下载的内容
+  if (decodedFromBase64.value) {
+    // 从Base64解码的文件
+    blob = decodedFromBase64.value
+    filename = decodedFileName.value
+  } else if (decodedFileContent.value && fileInfo.value) {
+    // 从文件解码的内容
+    try {
+      const binaryString = atob(decodedFileContent.value)
+      const bytes = new Uint8Array(binaryString.length)
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i)
+      }
+      blob = new Blob([bytes])
+      filename = `decoded_${fileInfo.value.name}`
+    } catch (error) {
+      validationResult.value = {
+        type: 'error',
+        message: `文件解码失败: ${error.message}`
+      }
+      return
+    }
+  } else {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有可下载的内容'
+    }
+    return
+  }
+  
   try {
     // 创建下载链接
-    const link = document.createElement('a')
-    link.href = inputData.value
-    link.download = selectedFile.value ? selectedFile.value.name : 'download'
-    link.click()
-  } catch (e) {
-    outputData.value = '文件下载错误: ' + e.message
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    validationResult.value = {
+      type: 'success',
+      message: '文件下载成功！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `文件下载失败: ${error.message}`
+    }
+  }
+}
+
+// 清空文件数据
+const clearFile = () => {
+  fileInfo.value = null
+  fileResult.value = ''
+  base64Input.value = ''
+  decodedFileContent.value = null
+  decodedFromBase64.value = null
+  decodedFileName.value = ''
+  decodedFileSize.value = 0
+  validationResult.value = null
+}
+
+// 复制结果
+const copyResult = async () => {
+  const result = activeTab.value === 'text' ? textOutput.value : fileResult.value
+  if (!result) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(result)
+    validationResult.value = {
+      type: 'success',
+      message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
   }
 }
 
@@ -189,292 +415,98 @@ const formatFileSize = (bytes) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
-// 清空数据
-const clearData = () => {
-  inputData.value = ''
-  outputData.value = ''
-}
-
-// 复制输入内容
-const copyInput = async () => {
-  try {
-    await navigator.clipboard.writeText(inputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = inputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
-}
-
-// 复制结果
-const copyResult = async () => {
-  try {
-    await navigator.clipboard.writeText(outputData.value)
-  } catch (err) {
-    // 降级方案
-    const textArea = document.createElement('textarea')
-    textArea.value = outputData.value
-    document.body.appendChild(textArea)
-    textArea.select()
-    document.execCommand('copy')
-    document.body.removeChild(textArea)
-  }
-}
-
-// 初始化数据
-const init = () => {
-  inputData.value = 'WeTools 开发者工具箱'
-  encodeBase64()
-}
-
-init()
+// 初始化示例数据
+textInput.value = 'Hello, WeTools!'
 </script>
 
 <style scoped>
 .tool-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-  padding: 1.5rem;
   margin-bottom: 2rem;
 }
 
-/* 暗色主题 */
-.dark-theme .tool-container {
-  background: #2d2d2d;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-  color: #e0e0e0;
-}
-
-.tool-section {
+.tool-header {
   margin-bottom: 1.5rem;
 }
 
-.tool-section:last-child {
-  margin-bottom: 0;
-}
-
-.tool-section h3 {
-  margin-bottom: 1rem;
-  color: #444;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* 暗色主题 */
-.dark-theme .tool-section h3 {
-  color: #e0e0e0;
-}
-
-/* 文件上传区域样式 */
-.file-upload-area {
-  border: 2px dashed #cbd5e1;
-  border-radius: 4px;
-  padding: 2rem;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s;
-  background: #f8fafc;
-}
-
-.file-upload-area:hover {
-  border-color: #667eea;
-}
-
-.upload-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.upload-icon {
-  font-size: 2rem;
-  color: #94a3b8;
-}
-
-.file-info {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-top: 0.5rem;
-}
-
-/* 图片预览样式 */
-.image-preview {
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.image-preview img {
-  max-width: 100%;
-  max-height: 300px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.result-header h3 {
-  margin-bottom: 0;
-}
-
-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  resize: vertical;
-  transition: border-color 0.2s;
-  min-height: 150px;
-  background: white;
+.tool-header h2 {
+  margin: 0 0 0.5rem 0;
   color: #333;
 }
 
-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+.tool-header p {
+  margin: 0;
+  color: #666;
 }
 
-/* 暗色主题 */
-.dark-theme textarea {
-  background: #3d3d3d;
-  border: 1px solid #555;
-  color: #e0e0e0;
+.tool-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-.dark-theme textarea:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
+.tool-tabs {
+  width: 100%;
+}
+
+.input-section,
+.output-section,
+.file-result,
+.base64-input {
+  width: 100%;
 }
 
 .button-group {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   flex-wrap: wrap;
-  margin: 1rem 0;
+  justify-content: center;
 }
 
-button {
-  padding: 0.5rem 1rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-  font-weight: 500;
+.button-group .el-button {
+  flex: 1;
+  min-width: 120px;
+  max-width: 160px;
+}
+
+.file-conversion-section {
   display: flex;
-  align-items: center;
-  gap: 5px;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
-button:hover {
-  background: #5a6fd8;
+.file-upload-area {
+  width: 100%;
 }
 
-button.secondary {
-  background: #f1f5f9;
-  color: #333;
+.file-info {
+  width: 100%;
 }
 
-button.secondary:hover {
-  background: #e2e8f0;
-}
-
-.copy-btn {
-  background: #4ade80;
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-}
-
-.copy-btn:hover {
-  background: #22c55e;
-}
-
-/* 暗色主题 */
-.dark-theme button {
-  background: #5a6fd8;
-  color: #e0e0e0;
-}
-
-.dark-theme button:hover {
-  background: #4a5fc8;
-}
-
-.dark-theme button.secondary {
-  background: #3d3d3d;
-  color: #e0e0e0;
-}
-
-.dark-theme button.secondary:hover {
-  background: #4d4d4d;
-}
-
-.dark-theme .copy-btn {
-  background: #22c55e;
-}
-
-.dark-theme .copy-btn:hover {
-  background: #16a34a;
-}
-
-.result {
-  background: #f8fafc;
-  border: 1px dashed #cbd5e1;
-  border-radius: 4px;
+.decoded-file-info {
+  margin-top: 1rem;
   padding: 1rem;
-  min-height: 150px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  line-height: 1.5;
-  overflow: auto;
-  max-height: 400px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
 }
 
-.result-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0.5rem;
+.decoded-file-info p {
+  margin: 0.5rem 0;
+  color: #666;
 }
 
-.description-list {
-  margin-top: 10px;
-  padding-left: 20px;
+.validation-result {
+  margin-top: 1rem;
 }
 
 @media (max-width: 768px) {
   .button-group {
     flex-direction: column;
+    align-items: center;
   }
   
-  button {
+  .button-group .el-button {
     width: 100%;
-    justify-content: center;
-  }
-  
-  .result-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
-  }
-  
-  .file-upload-area {
-    padding: 1rem;
+    max-width: none;
   }
 }
 </style>

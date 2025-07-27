@@ -105,13 +105,14 @@
                 :auto-upload="false"
                 :show-file-list="false"
                 :on-change="handleQRImageUpload"
+                @paste="handlePaste"
               >
                 <i class="fas fa-cloud-upload-alt"></i>
                 <div class="el-upload__text">
                   将二维码图片拖到此处，或<em>点击上传</em>
                 </div>
-                <div class="el-upload__tip" slot="tip">
-                  支持 JPG、PNG 格式的二维码图片
+                <div class="el-upload__tip">
+                  支持 JPG、PNG 格式的二维码图片，可直接粘贴图片
                 </div>
               </el-upload>
             </div>
@@ -158,6 +159,7 @@
 <script setup>
 import { ref } from 'vue'
 import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElFormItem, ElInput, ElSlider, ElSelect, ElOption, ElColorPicker, ElButton, ElAlert, ElUpload } from 'element-plus'
+import QRCode from 'qrcode'
 
 // 数据模型
 const activeTab = ref('generate')
@@ -172,7 +174,7 @@ const decodedData = ref('')
 const validationResult = ref(null)
 
 // 生成二维码
-const generateQRCode = () => {
+const generateQRCode = async () => {
   try {
     if (!qrData.value.trim()) {
       validationResult.value = {
@@ -182,9 +184,18 @@ const generateQRCode = () => {
       return
     }
     
-    // 使用在线API生成二维码
-    const apiUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData.value)}&size=${qrSize.value}x${qrSize.value}&ecc=${qrErrorCorrection.value}&color=${qrForegroundColor.value.replace('#', '')}&bgcolor=${qrBackgroundColor.value.replace('#', '')}`
-    qrCodeUrl.value = apiUrl
+    // 使用本地生成二维码
+    const options = {
+      width: qrSize.value,
+      margin: 2,
+      color: {
+        dark: qrForegroundColor.value,
+        light: qrBackgroundColor.value
+      },
+      errorCorrectionLevel: qrErrorCorrection.value
+    }
+    
+    qrCodeUrl.value = await QRCode.toDataURL(qrData.value, options)
     
     validationResult.value = {
       type: 'success',
