@@ -20,16 +20,16 @@
         class="sidebar-resize-handle" 
         @mousedown="startResize"
       ></div>
-      
-      <!-- 菜单收起按钮 -->
-      <div class="sidebar-toggle-wrapper">
-        <el-button 
-          class="sidebar-toggle" 
-          :icon="isSidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" 
-          circle 
-          @click="toggleSidebar"
-        />
-      </div>
+    </div>
+    
+    <!-- 菜单收起按钮 -->
+    <div class="sidebar-toggle-wrapper" :style="{ left: isSidebarCollapsed ? '64px' : sidebarWidth + 'px' }">
+      <el-button 
+        class="sidebar-toggle" 
+        :icon="isSidebarCollapsed ? 'ArrowRight' : 'ArrowLeft'" 
+        circle 
+        @click="toggleSidebar"
+      />
     </div>
 
     <!-- Main Content and Footer -->
@@ -67,6 +67,7 @@ import RandomTool from './tools/RandomTool.vue'
 import UuidTool from './tools/UuidTool.vue'
 import ConverterTool from './tools/ConverterTool.vue'
 import QrTool from './tools/QrTool.vue'
+import WebsiteTool from './tools/WebsiteTool.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 主题和菜单状态
@@ -95,7 +96,8 @@ const toolComponents = {
   random: RandomTool,
   uuid: UuidTool,
   converter: ConverterTool,
-  qr: QrTool
+  qr: QrTool,
+  website: WebsiteTool
 }
 
 // 当前选中的工具
@@ -171,13 +173,18 @@ onMounted(() => {
 <style scoped>
 .main-layout-container {
   flex: 1;
-  height: calc(100vh - 120px);
+  height: 100vh;
   overflow: hidden;
+  display: flex;
+  position: relative;
 }
 
 .content-container {
   flex: 1;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-container {
@@ -212,6 +219,7 @@ onMounted(() => {
   border-top: 1px solid #e1e5e9;
   background: white;
   flex-shrink: 0;
+  height: 80px; /* 设置固定高度 */
 }
 
 /* 暗色主题 */
@@ -253,8 +261,9 @@ onMounted(() => {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  right: -10px;
   z-index: 100;
+  transition: left 0.3s ease;
+  width: 0;
 }
 
 .sidebar-toggle {

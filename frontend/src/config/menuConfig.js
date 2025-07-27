@@ -96,5 +96,19 @@ export const menuItems = [
         icon: 'fas fa-qrcode'
       }
     ]
+  },
+  {
+    id: 'websites',
+    title: '网站集成',
+    icon: 'fas fa-globe',
+    collapsed: false,
+    items: [
+      {
+        id: 'website-manager',
+        title: '网站管理',
+        type: 'website',
+        icon: 'fas fa-cog'
+      }
+    ]
   }
 ]
