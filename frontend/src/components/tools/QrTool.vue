@@ -157,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElFormItem, ElInput, ElSlider, ElSelect, ElOption, ElColorPicker, ElButton, ElAlert, ElUpload } from 'element-plus'
 import QRCode from 'qrcode'
 
@@ -267,6 +267,29 @@ const handlePaste = (event) => {
   }
 }
 
+// 全局粘贴处理
+const handleGlobalPaste = (event) => {
+  // 只在解析二维码标签页处理粘贴
+  if (activeTab.value === 'decode') {
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        event.preventDefault() // 阻止默认粘贴行为
+        const blob = items[i].getAsFile()
+        if (blob) {
+          qrImageFile.value = blob
+          decodedData.value = ''
+          validationResult.value = {
+            type: 'success',
+            message: '图片已粘贴！'
+          }
+          break
+        }
+      }
+    }
+  }
+}
+
 // 解析二维码
 const decodeQRCode = async () => {
   if (!qrImageFile.value) {
@@ -349,6 +372,16 @@ const copyDecodedData = async () => {
 
 // 初始化示例数据
 qrData.value = 'https://example.com'
+
+// 挂载时添加全局粘贴监听器
+onMounted(() => {
+  document.addEventListener('paste', handleGlobalPaste)
+})
+
+// 卸载时移除全局粘贴监听器
+onUnmounted(() => {
+  document.removeEventListener('paste', handleGlobalPaste)
+})
 </script>
 
 <style scoped>

@@ -137,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { ElCard, ElTabs, ElTabPane, ElRow, ElCol, ElInput, ElButton, ElAlert, ElUpload, ElDescriptions, ElDescriptionsItem } from 'element-plus'
 
 // 数据模型
@@ -152,6 +152,7 @@ const decodedFromBase64 = ref(null)
 const decodedFileName = ref('')
 const decodedFileSize = ref(0)
 const validationResult = ref(null)
+const uploadRef = ref(null)
 
 // 编码文本为Base64
 const encodeText = () => {
@@ -238,6 +239,35 @@ const handlePaste = (event) => {
         decodedFileContent.value = null
         validationResult.value = null
         break
+      }
+    }
+  }
+}
+
+// 全局粘贴处理
+const handleGlobalPaste = (event) => {
+  // 只在文件转换标签页处理粘贴
+  if (activeTab.value === 'file') {
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1 || items[i].type.indexOf('file') !== -1) {
+        event.preventDefault() // 阻止默认粘贴行为
+        const blob = items[i].getAsFile()
+        if (blob) {
+          fileInfo.value = {
+            name: blob.name || 'pasted-file',
+            size: blob.size,
+            type: blob.type,
+            raw: blob
+          }
+          fileResult.value = ''
+          decodedFileContent.value = null
+          validationResult.value = {
+            type: 'success',
+            message: '文件已粘贴！'
+          }
+          break
+        }
       }
     }
   }
@@ -417,6 +447,16 @@ const formatFileSize = (bytes) => {
 
 // 初始化示例数据
 textInput.value = 'Hello, WeTools!'
+
+// 挂载时添加全局粘贴监听器
+onMounted(() => {
+  document.addEventListener('paste', handleGlobalPaste)
+})
+
+// 卸载时移除全局粘贴监听器
+onUnmounted(() => {
+  document.removeEventListener('paste', handleGlobalPaste)
+})
 </script>
 
 <style scoped>
