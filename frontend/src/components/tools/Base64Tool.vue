@@ -53,105 +53,102 @@
         </el-tab-pane>
         
         <el-tab-pane label="文件转换" name="file">
-          <div class="file-conversion-section">
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <div class="file-upload-area">
-                  <el-upload
-                    drag
-                    :auto-upload="false"
-                    :show-file-list="false"
-                    :on-change="handleFileChange"
-                    @paste="handlePaste"
-                  >
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <div class="el-upload__text">
-                      将文件拖到此处，或<em>点击上传</em>
-                    </div>
-                    <div class="el-upload__tip">
-                      支持所有文件类型，可直接粘贴图片或文件
-                    </div>
-                  </el-upload>
-                </div>
-                
-                <div class="file-info" v-if="fileInfo">
-                  <el-descriptions title="文件信息" :column="1" border>
-                    <el-descriptions-item label="文件名">{{ fileInfo.name }}</el-descriptions-item>
-                    <el-descriptions-item label="文件大小">{{ formatFileSize(fileInfo.size) }}</el-descriptions-item>
-                    <el-descriptions-item label="文件类型">{{ fileInfo.type }}</el-descriptions-item>
-                  </el-descriptions>
-                </div>
-                
-                <div class="file-preview" v-if="filePreviewUrl">
-                  <h3>文件预览</h3>
-                  <div class="preview-container">
-                    <img v-if="isImageFile" :src="filePreviewUrl" alt="文件预览" />
-                    <div v-else class="file-icon">
-                      <i class="fas fa-file"></i>
-                      <p>{{ fileInfo.name }}</p>
-                    </div>
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <div class="file-upload-area">
+                <el-upload
+                  drag
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleFileChange"
+                  @paste="handlePaste"
+                >
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <div class="el-upload__text">
+                    将文件拖到此处，或<em>点击上传</em>
                   </div>
-                </div>
-              </el-col>
+                  <div class="el-upload__tip">
+                    支持所有文件类型，可直接粘贴图片或文件
+                  </div>
+                </el-upload>
+              </div>
               
-              <el-col :span="12">
-                <div class="conversion-actions">
-                  <h3>文件操作</h3>
-                  <div class="button-group vertical">
-                    <el-button type="primary" @click="encodeFile" :disabled="!fileInfo" size="large">
-                      <i class="fas fa-lock"></i> 文件转Base64
-                    </el-button>
-                    <el-button @click="clearFile" size="large">
-                      <i class="fas fa-trash"></i> 清空
-                    </el-button>
+              <div class="file-info" v-if="fileInfo">
+                <el-descriptions title="文件信息" :column="1" border>
+                  <el-descriptions-item label="文件名">{{ fileInfo.name }}</el-descriptions-item>
+                  <el-descriptions-item label="文件大小">{{ formatFileSize(fileInfo.size) }}</el-descriptions-item>
+                  <el-descriptions-item label="文件类型">{{ fileInfo.type }}</el-descriptions-item>
+                </el-descriptions>
+              </div>
+              
+              <div class="file-preview" v-if="filePreviewUrl">
+                <h3>文件预览</h3>
+                <div class="preview-container">
+                  <img v-if="isImageFile" :src="filePreviewUrl" alt="文件预览" />
+                  <div v-else class="file-icon">
+                    <i class="fas fa-file"></i>
+                    <p>{{ fileInfo.name }}</p>
                   </div>
                 </div>
-                
-                <div class="base64-input">
-                  <el-input
-                    v-model="base64Input"
-                    type="textarea"
-                    :rows="6"
-                    placeholder="粘贴Base64字符串以转换为文件"
-                    resize="vertical"
-                  />
-                  <div class="button-group vertical">
-                    <el-button type="primary" @click="decodeBase64String" size="large">
-                      <i class="fas fa-file-download"></i> Base64转文件
-                    </el-button>
-                  </div>
-                </div>
-                
-                <div class="download-section" v-if="decodedFileName || fileResult">
-                  <div class="decoded-file-info" v-if="decodedFileName">
-                    <el-descriptions title="解码文件信息" :column="1" border>
-                      <el-descriptions-item label="文件名">{{ decodedFileName }}</el-descriptions-item>
-                      <el-descriptions-item label="文件大小">{{ formatFileSize(decodedFileSize) }}</el-descriptions-item>
-                    </el-descriptions>
-                  </div>
-                  <div class="button-group vertical">
-                    <el-button type="success" @click="downloadFile" :disabled="!decodedFileContent && !decodedFromBase64" size="large">
-                      <i class="fas fa-download"></i> 下载文件
-                    </el-button>
-                  </div>
-                </div>
-              </el-col>
-            </el-row>
-            
-            <div class="file-result" v-if="fileResult">
-              <h3>Base64编码结果</h3>
-              <el-input
-                v-model="fileResult"
-                type="textarea"
-                :rows="6"
-                placeholder="Base64编码结果将显示在这里"
-                resize="vertical"
-              />
-              <div class="button-group">
-                <el-button type="success" @click="copyResult" size="small">
-                  <i class="fas fa-copy"></i> 复制Base64
+              </div>
+              
+              <div class="button-group vertical">
+                <el-button type="primary" @click="encodeFile" :disabled="!fileInfo" size="large">
+                  <i class="fas fa-lock"></i> 文件转Base64 (含前缀)
+                </el-button>
+                <el-button @click="clearFile" size="large">
+                  <i class="fas fa-trash"></i> 清空
                 </el-button>
               </div>
+            </el-col>
+            
+            <el-col :span="12">
+              <div class="base64-input">
+                <el-input
+                  v-model="base64Input"
+                  type="textarea"
+                  :rows="8"
+                  placeholder="粘贴Base64字符串以转换为文件（可包含或不包含data:*/*;base64,前缀）"
+                  resize="vertical"
+                />
+              </div>
+              
+              <div class="button-group vertical">
+                <el-button type="primary" @click="decodeBase64String" size="large">
+                  <i class="fas fa-file-download"></i> Base64转文件
+                </el-button>
+              </div>
+              
+              <div class="decoded-file-section" v-if="decodedFileName">
+                <div class="decoded-file-info">
+                  <el-descriptions title="解码文件信息" :column="1" border>
+                    <el-descriptions-item label="文件名">{{ decodedFileName }}</el-descriptions-item>
+                    <el-descriptions-item label="文件大小">{{ formatFileSize(decodedFileSize) }}</el-descriptions-item>
+                    <el-descriptions-item label="文件类型">{{ decodedFileType }}</el-descriptions-item>
+                  </el-descriptions>
+                </div>
+                <div class="button-group vertical">
+                  <el-button type="success" @click="downloadFile" size="large">
+                    <i class="fas fa-download"></i> 下载文件
+                  </el-button>
+                </div>
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="file-result" v-if="fileResult">
+            <h3>Base64编码结果</h3>
+            <el-input
+              v-model="fileResult"
+              type="textarea"
+              :rows="6"
+              placeholder="Base64编码结果将显示在这里"
+              resize="vertical"
+            />
+            <div class="button-group">
+              <el-button type="success" @click="copyFileResult" size="small">
+                <i class="fas fa-copy"></i> 复制Base64
+              </el-button>
             </div>
           </div>
         </el-tab-pane>
@@ -180,10 +177,10 @@ const textOutput = ref('')
 const fileInfo = ref(null)
 const fileResult = ref('')
 const base64Input = ref('')
-const decodedFileContent = ref(null)
 const decodedFromBase64 = ref(null)
 const decodedFileName = ref('')
 const decodedFileSize = ref(0)
+const decodedFileType = ref('')
 const filePreviewUrl = ref('')
 const isImageFile = ref(false)
 const validationResult = ref(null)
@@ -253,10 +250,10 @@ const handleFileChange = (file) => {
     raw: file.raw
   }
   fileResult.value = ''
-  decodedFileContent.value = null
   decodedFromBase64.value = null
   decodedFileName.value = ''
   decodedFileSize.value = 0
+  decodedFileType.value = ''
   validationResult.value = null
   
   // 创建文件预览
@@ -277,10 +274,10 @@ const handlePaste = (event) => {
           raw: blob
         }
         fileResult.value = ''
-        decodedFileContent.value = null
         decodedFromBase64.value = null
         decodedFileName.value = ''
         decodedFileSize.value = 0
+        decodedFileType.value = ''
         validationResult.value = null
         
         // 创建文件预览
@@ -308,10 +305,10 @@ const handleGlobalPaste = (event) => {
             raw: blob
           }
           fileResult.value = ''
-          decodedFileContent.value = null
           decodedFromBase64.value = null
           decodedFileName.value = ''
           decodedFileSize.value = 0
+          decodedFileType.value = ''
           validationResult.value = {
             type: 'success',
             message: '文件已粘贴！'
@@ -342,7 +339,7 @@ const createFilePreview = (file) => {
   }
 }
 
-// 编码文件为Base64
+// 编码文件为Base64 (包含data URI前缀)
 const encodeFile = () => {
   if (!fileInfo.value) {
     validationResult.value = {
@@ -355,8 +352,8 @@ const encodeFile = () => {
   const reader = new FileReader()
   reader.onload = (e) => {
     try {
-      const base64String = e.target.result.split(',')[1] // 移除data:*/*;base64,前缀
-      fileResult.value = base64String
+      // 保留完整的data URI前缀
+      fileResult.value = e.target.result
       validationResult.value = {
         type: 'success',
         message: '文件编码成功！'
@@ -388,16 +385,44 @@ const decodeBase64String = () => {
   }
   
   try {
+    let base64String = base64Input.value.trim()
+    let mimeType = 'application/octet-stream'
+    
+    // 检查是否包含data URI前缀
+    if (base64String.startsWith('data:')) {
+      const parts = base64String.split(',')
+      mimeType = parts[0].substring(5) // 移除"data:"前缀
+      if (mimeType.endsWith(';base64')) {
+        mimeType = mimeType.substring(0, mimeType.length - 7) // 移除";base64"后缀
+      }
+      base64String = parts[1]
+    }
+    
     // 尝试解析Base64字符串
-    const binaryString = atob(base64Input.value)
+    const binaryString = atob(base64String)
     const bytes = new Uint8Array(binaryString.length)
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i)
     }
     
-    decodedFromBase64.value = new Blob([bytes])
-    decodedFileName.value = 'decoded-file.bin'
+    decodedFromBase64.value = new Blob([bytes], { type: mimeType })
+    
+    // 根据MIME类型推断文件扩展名
+    let extension = 'bin'
+    if (mimeType.startsWith('image/')) {
+      extension = mimeType.split('/')[1]
+      if (extension === 'jpeg') extension = 'jpg'
+    } else if (mimeType.startsWith('text/')) {
+      extension = 'txt'
+    } else if (mimeType === 'application/pdf') {
+      extension = 'pdf'
+    } else if (mimeType === 'application/json') {
+      extension = 'json'
+    }
+    
+    decodedFileName.value = `decoded-file.${extension}`
     decodedFileSize.value = bytes.length
+    decodedFileType.value = mimeType
     
     validationResult.value = {
       type: 'success',
@@ -413,31 +438,7 @@ const decodeBase64String = () => {
 
 // 下载文件
 const downloadFile = () => {
-  let blob, filename
-  
-  // 确定要下载的内容
-  if (decodedFromBase64.value) {
-    // 从Base64解码的文件
-    blob = decodedFromBase64.value
-    filename = decodedFileName.value
-  } else if (decodedFileContent.value && fileInfo.value) {
-    // 从文件解码的内容
-    try {
-      const binaryString = atob(decodedFileContent.value)
-      const bytes = new Uint8Array(binaryString.length)
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i)
-      }
-      blob = new Blob([bytes])
-      filename = `decoded_${fileInfo.value.name}`
-    } catch (error) {
-      validationResult.value = {
-        type: 'error',
-        message: `文件解码失败: ${error.message}`
-      }
-      return
-    }
-  } else {
+  if (!decodedFromBase64.value) {
     validationResult.value = {
       type: 'warning',
       message: '没有可下载的内容'
@@ -447,10 +448,10 @@ const downloadFile = () => {
   
   try {
     // 创建下载链接
-    const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(decodedFromBase64.value)
     const a = document.createElement('a')
     a.href = url
-    a.download = filename
+    a.download = decodedFileName.value
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -473,19 +474,18 @@ const clearFile = () => {
   fileInfo.value = null
   fileResult.value = ''
   base64Input.value = ''
-  decodedFileContent.value = null
   decodedFromBase64.value = null
   decodedFileName.value = ''
   decodedFileSize.value = 0
+  decodedFileType.value = ''
   filePreviewUrl.value = ''
   isImageFile.value = false
   validationResult.value = null
 }
 
-// 复制结果
+// 复制文本结果
 const copyResult = async () => {
-  const result = activeTab.value === 'text' ? textOutput.value : fileResult.value
-  if (!result) {
+  if (!textOutput.value) {
     validationResult.value = {
       type: 'warning',
       message: '没有内容可复制'
@@ -494,10 +494,34 @@ const copyResult = async () => {
   }
   
   try {
-    await navigator.clipboard.writeText(result)
+    await navigator.clipboard.writeText(textOutput.value)
     validationResult.value = {
       type: 'success',
       message: '结果已复制到剪贴板！'
+    }
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: '复制失败，请手动复制'
+    }
+  }
+}
+
+// 复制文件Base64结果
+const copyFileResult = async () => {
+  if (!fileResult.value) {
+    validationResult.value = {
+      type: 'warning',
+      message: '没有内容可复制'
+    }
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(fileResult.value)
+    validationResult.value = {
+      type: 'success',
+      message: 'Base64结果已复制到剪贴板！'
     }
   } catch (error) {
     validationResult.value = {
@@ -571,6 +595,7 @@ onUnmounted(() => {
   gap: 1rem;
   flex-wrap: wrap;
   justify-content: center;
+  margin: 1rem 0;
 }
 
 .button-group.vertical {
@@ -589,12 +614,6 @@ onUnmounted(() => {
   max-width: none;
 }
 
-.file-conversion-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
 .file-upload-area {
   width: 100%;
 }
@@ -602,16 +621,6 @@ onUnmounted(() => {
 .file-info {
   width: 100%;
   margin-top: 1rem;
-}
-
-.conversion-actions {
-  width: 100%;
-  margin-bottom: 1rem;
-}
-
-.conversion-actions h3 {
-  margin: 0 0 1rem 0;
-  color: #333;
 }
 
 .file-preview {
@@ -651,13 +660,23 @@ onUnmounted(() => {
   margin-bottom: 0.5rem;
 }
 
-.download-section {
+.decoded-file-section {
   width: 100%;
   margin-top: 1rem;
 }
 
 .decoded-file-info {
   margin-bottom: 1rem;
+}
+
+.file-result {
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.file-result h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
 }
 
 .validation-result {
@@ -671,6 +690,11 @@ onUnmounted(() => {
   }
   
   .button-group .el-button {
+    width: 100%;
+    max-width: none;
+  }
+  
+  .button-group.vertical .el-button {
     width: 100%;
     max-width: none;
   }
