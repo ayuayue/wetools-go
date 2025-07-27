@@ -82,10 +82,11 @@
             />
             <el-button
               type="success"
-              icon="fas fa-copy"
               @click="copySingleResult(index)"
               circle
-            />
+            >
+              <i class="fas fa-copy"></i>
+            </el-button>
           </div>
         </div>
       </div>
