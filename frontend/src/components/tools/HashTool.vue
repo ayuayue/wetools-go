@@ -6,42 +6,67 @@
     </div>
     
     <div class="tool-content">
-      <el-row :gutter="20">
-        <el-col :span="24">
+      <!-- 两栏布局 -->
+      <div class="two-column-layout">
+        <!-- 左侧输入区域 -->
+        <div class="column input-column">
           <div class="input-section">
-            <el-input
+            <div class="editor-header">
+              <h3>文本输入</h3>
+            </div>
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="6"
-              placeholder="请输入要计算哈希值的文本"
-              resize="vertical"
+              language="text"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <div class="salt-section">
-            <el-input
-              v-model="salt"
-              placeholder="请输入盐值（可选）"
+          
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <div class="salt-section">
+                <el-input
+                  v-model="salt"
+                  placeholder="请输入盐值（可选）"
+                />
+              </div>
+            </el-col>
+          </el-row>
+          
+          <div class="hash-algorithms">
+            <h3>选择哈希算法</h3>
+            <div class="algorithm-buttons">
+              <el-button 
+                v-for="algorithm in algorithms" 
+                :key="algorithm.name"
+                :type="selectedAlgorithm === algorithm.name ? 'primary' : ''"
+                @click="selectAlgorithm(algorithm.name)"
+              >
+                {{ algorithm.name }}
+              </el-button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 右侧输出区域 -->
+        <div class="column output-column">
+          <div class="output-section">
+            <div class="editor-header">
+              <h3>哈希输出</h3>
+              <div class="editor-actions">
+                <el-button type="success" @click="copyResult">
+                  <i class="fas fa-copy"></i> 复制结果
+                </el-button>
+              </div>
+            </div>
+            <AceEditor
+              v-model="hashResult"
+              language="text"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
-      
-      <div class="hash-algorithms">
-        <h3>选择哈希算法</h3>
-        <div class="algorithm-buttons">
-          <el-button 
-            v-for="algorithm in algorithms" 
-            :key="algorithm.name"
-            :type="selectedAlgorithm === algorithm.name ? 'primary' : ''"
-            @click="selectAlgorithm(algorithm.name)"
-          >
-            {{ algorithm.name }}
-          </el-button>
         </div>
       </div>
       
@@ -58,18 +83,6 @@
         <el-button @click="isUppercase = !isUppercase" :type="isUppercase ? 'primary' : 'default'">
           {{ isUppercase ? '转小写' : '转大写' }}
         </el-button>
-        <el-button type="success" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </el-button>
-      </div>
-      
-      <div class="result-section" v-if="hashResult">
-        <h3>计算结果</h3>
-        <el-input
-          v-model="hashResult"
-          readonly
-          placeholder="哈希计算结果将显示在这里"
-        />
       </div>
       
       <div class="all-results-section" v-if="allHashResults.length > 0">
@@ -93,9 +106,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert, ElTable, ElTableColumn } from 'element-plus'
 import CryptoJS from 'crypto-js'
+import AceEditor from '../AceEditor.vue'
+
+// 注入主题
+const theme = inject('theme', ref('light'))
 
 // 数据模型
 const inputData = ref('')

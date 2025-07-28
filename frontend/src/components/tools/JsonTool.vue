@@ -6,19 +6,47 @@
     </div>
     
     <div class="tool-content">
-      <el-row :gutter="20">
-        <el-col :span="24">
+      <!-- 两栏布局 -->
+      <div class="two-column-layout">
+        <!-- 左侧输入区域 -->
+        <div class="column input-column">
           <div class="input-section">
-            <el-input
+            <div class="editor-header">
+              <h3>JSON输入</h3>
+              <div class="editor-actions">
+                <!-- 占位元素，确保与右侧高度一致 -->
+              </div>
+            </div>
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="10"
-              placeholder='请输入JSON数据，例如：{"name": "WeTools", "type": "developer tools"}'
-              resize="vertical"
+              language="json"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
+        </div>
+        
+        <!-- 右侧输出区域 -->
+        <div class="column output-column">
+          <div class="output-section">
+            <div class="editor-header">
+              <h3>JSON输出</h3>
+              <div class="editor-actions">
+                <el-button type="success" @click="copyResult">
+                  <i class="fas fa-copy"></i> 复制结果
+                </el-button>
+              </div>
+            </div>
+            <AceEditor
+              v-model="outputData"
+              language="json"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
+            />
+          </div>
+        </div>
+      </div>
       
       <div class="button-group">
         <el-button type="primary" @click="formatJson">
@@ -33,24 +61,7 @@
         <el-button @click="clearData">
           <i class="fas fa-trash"></i> 清空
         </el-button>
-        <el-button type="success" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </el-button>
       </div>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <div class="output-section">
-            <el-input
-              v-model="outputData"
-              type="textarea"
-              :rows="10"
-              placeholder="格式化后的JSON结果将显示在这里"
-              resize="vertical"
-            />
-          </div>
-        </el-col>
-      </el-row>
       
       <div class="validation-result" v-if="validationResult">
         <el-alert
@@ -65,8 +76,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
+import AceEditor from '../AceEditor.vue'
+
+// 注入主题
+const theme = inject('theme', ref('light'))
 
 // 数据模型
 const inputData = ref('')
@@ -184,17 +199,19 @@ inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["
 }
 
 .tool-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .tool-header h2 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;
   color: #333;
+  font-size: 1.5rem;
 }
 
 .tool-header p {
   margin: 0;
   color: #666;
+  font-size: 0.9rem;
 }
 
 .tool-content {
@@ -203,9 +220,47 @@ inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["
   gap: 1.5rem;
 }
 
+/* 两栏布局 */
+.two-column-layout {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-column,
+.output-column {
+  flex: 1;
+}
+
 .input-section,
 .output-section {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  flex: 1;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.editor-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .button-group {
@@ -226,6 +281,10 @@ inputData.value = '{"name": "WeTools", "type": "developer tools", "features": ["
 }
 
 @media (max-width: 768px) {
+  .two-column-layout {
+    flex-direction: column;
+  }
+  
   .button-group {
     flex-direction: column;
     align-items: center;

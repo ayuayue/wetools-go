@@ -35,12 +35,69 @@
     <!-- Main Content and Footer -->
     <el-container direction="vertical" class="content-container">
       <el-main class="main-content">
-        <ToolHeader />
+        <ToolHeader :breadcrumb-items="breadcrumbItems" />
         
-        <component 
-          :is="currentTool.component" 
-          @tool-result="handleToolResult"
-        />
+        <!-- 标签页 -->
+        <el-tabs 
+          v-model="activeTab" 
+          type="card" 
+          @tab-remove="removeTab"
+          @tab-click="switchTab"
+          class="tool-tabs"
+        >
+          <el-tab-pane
+            v-for="tab in openTabs"
+            :key="tab.id"
+            :name="tab.id"
+          >
+            <template #label>
+              <div class="tab-label" @contextmenu.prevent="showContextMenu(tab.id, $event)">
+                <span>{{ tab.title }}</span>
+                <el-icon 
+                  v-if="tab.pinned" 
+                  class="pin-icon pinned" 
+                  @click.stop="togglePinTab(tab.id)"
+                >
+                  <Lock />
+                </el-icon>
+                <el-icon 
+                  v-else 
+                  class="pin-icon" 
+                  @click.stop="togglePinTab(tab.id)"
+                >
+                  <Unlock />
+                </el-icon>
+                <el-icon 
+                  v-if="!tab.pinned" 
+                  class="close-icon" 
+                  @click.stop="removeTab(tab.id)"
+                >
+                  <Close />
+                </el-icon>
+              </div>
+            </template>
+            <component 
+              :is="tab.component" 
+              @tool-result="handleToolResult"
+            />
+          </el-tab-pane>
+        </el-tabs>
+        
+        <!-- 右键菜单 -->
+        <div 
+          v-show="contextMenuVisible" 
+          class="context-menu" 
+          :style="{ left: contextMenuX + 'px', top: contextMenuY + 'px' }"
+          @blur="contextMenuVisible = false"
+          tabindex="-1"
+        >
+          <ul>
+            <li @click="closeAllTabs">关闭所有标签页</li>
+            <li @click="closeOtherTabs">关闭其他标签页</li>
+            <li @click="closeLeftTabs">关闭左侧标签页</li>
+            <li @click="closeRightTabs">关闭右侧标签页</li>
+          </ul>
+        </div>
       </el-main>
       
       <!-- Footer -->
@@ -53,7 +110,8 @@
 
 <script setup>
 import { ref, shallowRef, onMounted, reactive, onBeforeMount, provide, computed } from 'vue'
-import { ElContainer, ElAside, ElMain, ElFooter, ElButton } from 'element-plus'
+import { ElContainer, ElAside, ElMain, ElFooter, ElButton, ElTabs, ElTabPane, ElIcon, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
+import { Close, Lock, Unlock } from '@element-plus/icons-vue'
 import Sidebar from './Sidebar.vue'
 import ToolHeader from './ToolHeader.vue'
 import JsonTool from './tools/JsonTool.vue'
@@ -68,6 +126,10 @@ import UuidTool from './tools/UuidTool.vue'
 import ConverterTool from './tools/ConverterTool.vue'
 import QrTool from './tools/QrTool.vue'
 import WebsiteTool from './tools/WebsiteTool.vue'
+import ProxyTool from './tools/ProxyTool.vue'
+import SettingsTool from './tools/SettingsTool.vue'
+import HtmlRunner from './tools/HtmlRunner.vue'
+import JsRunner from './tools/JsRunner.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 主题和菜单状态
@@ -97,8 +159,27 @@ const toolComponents = {
   uuid: UuidTool,
   converter: ConverterTool,
   qr: QrTool,
-  website: WebsiteTool
+  website: WebsiteTool,
+  proxy: ProxyTool,
+  settings: SettingsTool,
+  htmlrunner: HtmlRunner,
+  jsrunner: JsRunner
 }
+
+// 标签页管理
+const openTabs = ref([])
+const activeTab = ref('')
+
+// 右键菜单相关
+const contextMenuVisible = ref(false)
+const contextMenuTabId = ref('')
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+
+// 面包屑数据
+const breadcrumbItems = ref([
+  { title: '首页', path: '/' }
+])
 
 // 当前选中的工具
 const currentTool = ref({
@@ -137,11 +218,198 @@ const startResize = (e) => {
 const handleMenuItemClick = (tool) => {
   // 根据tool.type动态加载对应的组件
   const component = toolComponents[tool.type] || JsonTool
+  
+  // 检查标签页是否已存在
+  const existingTab = openTabs.value.find(tab => tab.id === tool.id)
+  
+  if (!existingTab) {
+    // 添加新标签页
+    const newTab = {
+      id: tool.id,
+      title: tool.title,
+      description: tool.description || '',
+      icon: tool.icon,
+      component: component,
+      tool: tool,
+      pinned: false // 默认不固定
+    }
+    openTabs.value.push(newTab)
+  }
+  
+  // 激活标签页
+  activeTab.value = tool.id
+  
+  // 更新当前工具
   currentTool.value = {
     title: tool.title,
     description: tool.description || '',
     icon: tool.icon,
     component: component
+  }
+  
+  // 更新面包屑
+  updateBreadcrumb(tool)
+}
+
+// 切换标签页固定状态
+const togglePinTab = (tabId) => {
+  const tab = openTabs.value.find(tab => tab.id === tabId)
+  if (tab) {
+    tab.pinned = !tab.pinned
+  }
+}
+
+// 显示右键菜单
+const showContextMenu = (tabId, event) => {
+  event.preventDefault()
+  contextMenuTabId.value = tabId
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuVisible.value = true
+  
+  // 确保菜单获得焦点，以便可以监听blur事件
+  setTimeout(() => {
+    const menu = document.querySelector('.context-menu')
+    if (menu) {
+      menu.focus()
+    }
+  }, 0)
+}
+
+// 关闭右侧标签页
+const closeRightTabs = () => {
+  const tabIndex = openTabs.value.findIndex(tab => tab.id === contextMenuTabId.value)
+  if (tabIndex !== -1) {
+    // 保留左侧和当前标签页，过滤掉右侧标签页（固定标签页除外）
+    openTabs.value = openTabs.value.filter((tab, index) => {
+      if (index <= tabIndex) return true
+      if (tab.pinned) return true
+      return false
+    })
+    
+    // 如果当前激活的标签页被关闭了，激活最后一个标签页
+    if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
+      activeTab.value = openTabs.value[openTabs.value.length - 1]?.id || ''
+    }
+    
+    // 如果没有标签页了，添加默认标签页
+    if (openTabs.value.length === 0) {
+      const defaultTool = menuData[0].items[0]
+      handleMenuItemClick(defaultTool)
+    }
+  }
+}
+
+// 关闭左侧标签页
+const closeLeftTabs = () => {
+  const tabIndex = openTabs.value.findIndex(tab => tab.id === contextMenuTabId.value)
+  if (tabIndex !== -1) {
+    // 保留右侧和当前标签页，过滤掉左侧标签页（固定标签页除外）
+    openTabs.value = openTabs.value.filter((tab, index) => {
+      if (index >= tabIndex) return true
+      if (tab.pinned) return true
+      return false
+    })
+    
+    // 如果当前激活的标签页被关闭了，激活第一个标签页
+    if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
+      activeTab.value = openTabs.value[0]?.id || ''
+    }
+    
+    // 如果没有标签页了，添加默认标签页
+    if (openTabs.value.length === 0) {
+      const defaultTool = menuData[0].items[0]
+      handleMenuItemClick(defaultTool)
+    }
+  }
+}
+
+// 关闭其他标签页
+const closeOtherTabs = () => {
+  // 只保留当前标签页和固定标签页
+  openTabs.value = openTabs.value.filter(tab => {
+    if (tab.id === contextMenuTabId.value) return true
+    if (tab.pinned) return true
+    return false
+  })
+  
+  // 如果当前激活的标签页被关闭了，激活右键点击的标签页
+  if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
+    activeTab.value = contextMenuTabId.value
+  }
+}
+
+// 关闭所有标签页
+const closeAllTabs = () => {
+  // 只保留固定标签页
+  openTabs.value = openTabs.value.filter(tab => tab.pinned)
+  
+  // 如果没有标签页了，添加默认标签页
+  if (openTabs.value.length === 0) {
+    const defaultTool = menuData[0].items[0]
+    handleMenuItemClick(defaultTool)
+  } else {
+    // 激活第一个标签页
+    activeTab.value = openTabs.value[0].id
+  }
+}
+
+// 更新面包屑
+const updateBreadcrumb = (tool) => {
+  // 找到工具所属的分类
+  const category = menuData.find(cat => cat.items.some(item => item.id === tool.id))
+  
+  breadcrumbItems.value = [
+    { title: '首页', path: '/' },
+    { title: category ? category.title : '工具', path: '#' },
+    { title: tool.title, path: '#' }
+  ]
+}
+
+// 移除标签页
+const removeTab = (targetName) => {
+  const tabs = openTabs.value
+  let activeName = activeTab.value
+  
+  // 检查是否是固定标签页
+  const tabToRemove = tabs.find(tab => tab.id === targetName)
+  if (tabToRemove && tabToRemove.pinned) {
+    // 固定的标签页不能被移除
+    return
+  }
+  
+  if (activeName === targetName) {
+    tabs.forEach((tab, index) => {
+      if (tab.id === targetName) {
+        const nextTab = tabs[index + 1] || tabs[index - 1]
+        if (nextTab) {
+          activeName = nextTab.id
+        }
+      }
+    })
+  }
+  
+  activeTab.value = activeName
+  openTabs.value = tabs.filter(tab => tab.id !== targetName)
+  
+  // 如果没有标签页了，添加默认标签页
+  if (openTabs.value.length === 0) {
+    const defaultTool = menuData[0].items[0]
+    handleMenuItemClick(defaultTool)
+  }
+}
+
+// 切换标签页
+const switchTab = (tab) => {
+  const tool = openTabs.value.find(t => t.id === tab.props.name)
+  if (tool) {
+    currentTool.value = {
+      title: tool.title,
+      description: tool.description || '',
+      icon: tool.icon,
+      component: tool.component
+    }
+    updateBreadcrumb(tool.tool)
   }
 }
 
@@ -205,7 +473,7 @@ onMounted(() => {
 }
 
 .main-content {
-  padding: 2rem;
+  padding: 1rem;
   overflow-y: auto;
   background-color: #f5f7fa;
   flex: 1;
@@ -213,13 +481,103 @@ onMounted(() => {
 
 .footer {
   text-align: center;
-  padding: 1.5rem;
+  padding: 0.8rem;
   color: #666;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   border-top: 1px solid #e1e5e9;
   background: white;
   flex-shrink: 0;
-  height: 80px; /* 设置固定高度 */
+  height: 45px; /* 设置固定高度 */
+}
+
+/* 标签页样式 */
+.tool-tabs {
+  margin-top: 1rem;
+}
+
+.tool-tabs :deep(.el-tabs__header) {
+  margin-bottom: 1rem;
+}
+
+.tool-tabs :deep(.el-tabs__content) {
+  min-height: 300px;
+}
+
+/* 标签页标签样式 */
+.tab-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pin-icon {
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.pin-icon:hover {
+  color: #409eff;
+}
+
+.pin-icon.pinned {
+  color: #409eff;
+}
+
+.close-icon {
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.close-icon:hover {
+  color: #f56c6c;
+}
+
+/* 右键菜单样式 */
+.context-menu {
+  position: fixed;
+  background: white;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  z-index: 3000;
+  min-width: 160px;
+}
+
+.context-menu ul {
+  list-style: none;
+  padding: 6px 0;
+  margin: 0;
+}
+
+.context-menu li {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #606266;
+}
+
+.context-menu li:hover {
+  background-color: #f5f7fa;
+  color: #409eff;
+}
+
+/* 暗色主题下的右键菜单 */
+.dark-theme .context-menu {
+  background: #2d2d2d;
+  border: 1px solid #444;
+}
+
+.dark-theme .context-menu li {
+  color: #aaa;
+}
+
+.dark-theme .context-menu li:hover {
+  background-color: #3d3d3d;
+  color: #409eff;
 }
 
 /* 暗色主题 */

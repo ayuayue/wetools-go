@@ -1,52 +1,39 @@
 <template>
+  <el-breadcrumb separator="/" class="tool-breadcrumb">
+    <el-breadcrumb-item 
+      v-for="(item, index) in breadcrumbItems" 
+      :key="index"
+      :to="item.path"
+    >
+      {{ item.title }}
+    </el-breadcrumb-item>
+  </el-breadcrumb>
 </template>
 
 <script setup>
-import { ElCard } from 'element-plus'
+import { ElBreadcrumb, ElBreadcrumbItem } from 'element-plus'
 
-// 不再需要props，因为标题和描述已被移除
+// 定义props
+const props = defineProps({
+  breadcrumbItems: {
+    type: Array,
+    default: () => []
+  }
+})
 </script>
 
 <style scoped>
-.tool-header {
-  margin-bottom: 1.5rem;
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-  color: white;
-  border: none;
-}
-
-.header-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.title {
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-}
-
-.description {
-  font-size: 1rem;
-  opacity: 0.9;
-  margin: 0;
+.tool-breadcrumb {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 /* 暗色主题 */
-.dark-theme .tool-header {
-  background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
-}
-
-@media (max-width: 768px) {
-  .title {
-    font-size: 1.25rem;
-  }
-  
-  .description {
-    font-size: 0.875rem;
-  }
+.dark-theme .tool-breadcrumb {
+  background: #2d2d2d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 </style>

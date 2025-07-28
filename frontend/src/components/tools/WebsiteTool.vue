@@ -233,8 +233,28 @@ const removeWebsite = (website) => {
 }
 
 // 打开网站（在新标签页中打开）
-const openWebsite = (website) => {
+const openWebsite = async (website) => {
   try {
+    // 检查是否有代理配置
+    const proxyConfig = localStorage.getItem('proxyConfig')
+    if (proxyConfig) {
+      const config = JSON.parse(proxyConfig)
+      if (config.enabled && config.host && config.port) {
+        // 如果启用了代理，通过Wails后端获取代理URL
+        try {
+          const proxyUrl = await window.go.main.App.ProxyRequest(website.url)
+          window.open(proxyUrl, '_blank')
+          return
+        } catch (proxyError) {
+          console.error('获取代理URL失败:', proxyError)
+          // 如果获取代理URL失败，直接打开网站
+          window.open(website.url, '_blank')
+          return
+        }
+      }
+    }
+    
+    // 如果没有启用代理，直接打开网站
     window.open(website.url, '_blank')
   } catch (error) {
     validationResult.value = {
@@ -245,8 +265,37 @@ const openWebsite = (website) => {
 }
 
 // 加载网站（在iframe中显示）
-const loadWebsite = (url) => {
-  selectedWebsite.value = url
+const loadWebsite = async (url) => {
+  try {
+    // 检查是否有代理配置
+    const proxyConfig = localStorage.getItem('proxyConfig')
+    if (proxyConfig) {
+      const config = JSON.parse(proxyConfig)
+      if (config.enabled && config.host && config.port) {
+        // 如果启用了代理，通过Wails后端获取代理URL
+        try {
+          const proxyUrl = await window.go.main.App.ProxyRequest(url)
+          selectedWebsite.value = proxyUrl
+          return
+        } catch (proxyError) {
+          console.error('获取代理URL失败:', proxyError)
+          // 如果获取代理URL失败，显示错误信息
+          validationResult.value = {
+            type: 'error',
+            message: `代理配置错误: ${proxyError.message}`
+          }
+        }
+      }
+    }
+    
+    // 如果没有启用代理，直接加载网站
+    selectedWebsite.value = url
+  } catch (error) {
+    validationResult.value = {
+      type: 'error',
+      message: `加载网站失败: ${error.message}`
+    }
+  }
 }
 
 // 刷新网站

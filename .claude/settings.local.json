@@ -32,7 +32,14 @@
       "Bash(./wetools-go.exe:*)",
       "Bash(Get-ChildItem:*)",
       "Bash(dir:*)",
-      "WebFetch(domain:ctool.dev)"
+      "WebFetch(domain:ctool.dev)",
+      "WebFetch(domain:wails.io)",
+      "Bash(go get:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(go doc:*)",
+      "Bash(go list:*)",
+      "Bash(cat:*)",
+      "Bash(go clean:*)"
     ],
     "deny": []
   }

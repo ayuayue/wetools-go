@@ -110,5 +110,45 @@ export const menuItems = [
         icon: 'fas fa-cog'
       }
     ]
+  },
+  {
+    id: 'settings',
+    title: '系统设置',
+    icon: 'fas fa-cog',
+    collapsed: false,
+    items: [
+      {
+        id: 'proxy-config',
+        title: '代理设置',
+        type: 'proxy',
+        icon: 'fas fa-network-wired'
+      },
+      {
+        id: 'app-settings',
+        title: '应用设置',
+        type: 'settings',
+        icon: 'fas fa-sliders-h'
+      }
+    ]
+  },
+  {
+    id: 'code-execution',
+    title: '代码运行',
+    icon: 'fas fa-code',
+    collapsed: false,
+    items: [
+      {
+        id: 'html-runner',
+        title: 'HTML运行器',
+        type: 'htmlrunner',
+        icon: 'fab fa-html5'
+      },
+      {
+        id: 'js-runner',
+        title: 'JavaScript运行器',
+        type: 'jsrunner',
+        icon: 'fab fa-js'
+      }
+    ]
   }
 ]

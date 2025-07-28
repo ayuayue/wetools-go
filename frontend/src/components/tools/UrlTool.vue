@@ -6,19 +6,47 @@
     </div>
     
     <div class="tool-content">
-      <el-row :gutter="20">
-        <el-col :span="24">
+      <!-- 两栏布局 -->
+      <div class="two-column-layout">
+        <!-- 左侧输入区域 -->
+        <div class="column input-column">
           <div class="input-section">
-            <el-input
+            <div class="editor-header">
+              <h3>URL输入</h3>
+              <div class="editor-actions">
+                <!-- 占位元素，确保与右侧高度一致 -->
+              </div>
+            </div>
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="8"
-              placeholder="请输入要编码或解码的URL或文本"
-              resize="vertical"
+              language="text"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
+        </div>
+        
+        <!-- 右侧输出区域 -->
+        <div class="column output-column">
+          <div class="output-section">
+            <div class="editor-header">
+              <h3>URL输出</h3>
+              <div class="editor-actions">
+                <el-button type="success" @click="copyResult">
+                  <i class="fas fa-copy"></i> 复制结果
+                </el-button>
+              </div>
+            </div>
+            <AceEditor
+              v-model="outputData"
+              language="text"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
+            />
+          </div>
+        </div>
+      </div>
       
       <div class="button-group">
         <el-button type="primary" @click="encodeUrl">
@@ -33,24 +61,7 @@
         <el-button @click="clearData">
           <i class="fas fa-trash"></i> 清空
         </el-button>
-        <el-button type="success" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </el-button>
       </div>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <div class="output-section">
-            <el-input
-              v-model="outputData"
-              type="textarea"
-              :rows="8"
-              placeholder="转换结果将显示在这里"
-              resize="vertical"
-            />
-          </div>
-        </el-col>
-      </el-row>
       
       <div class="params-section" v-if="urlParams.length > 0">
         <h3>URL参数解析结果</h3>
@@ -73,8 +84,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert, ElTable, ElTableColumn } from 'element-plus'
+import AceEditor from '../AceEditor.vue'
+
+// 注入主题
+const theme = inject('theme', ref('light'))
 
 // 数据模型
 const inputData = ref('')
@@ -231,9 +246,47 @@ inputData.value = 'https://example.com/search?q=hello world&category=tools&page=
   gap: 1.5rem;
 }
 
+/* 两栏布局 */
+.two-column-layout {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-column,
+.output-column {
+  flex: 1;
+}
+
 .input-section,
 .output-section {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  flex: 1;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.editor-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .button-group {
@@ -263,6 +316,10 @@ inputData.value = 'https://example.com/search?q=hello world&category=tools&page=
 }
 
 @media (max-width: 768px) {
+  .two-column-layout {
+    flex-direction: column;
+  }
+  
   .button-group {
     flex-direction: column;
     align-items: center;

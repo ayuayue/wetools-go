@@ -101,7 +101,6 @@ const initEditor = () => {
 
   const extensions = [
     basicSetup,
-    EditorView.lineWrapping,
     EditorView.editable.of(!props.readonly),
     EditorView.updateListener.of((update) => {
       if (update.docChanged) {
