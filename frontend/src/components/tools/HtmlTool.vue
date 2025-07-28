@@ -6,19 +6,47 @@
     </div>
     
     <div class="tool-content">
-      <el-row :gutter="20">
-        <el-col :span="24">
+      <!-- 两栏布局 -->
+      <div class="two-column-layout">
+        <!-- 左侧输入区域 -->
+        <div class="column input-column">
           <div class="input-section">
-            <el-input
+            <div class="editor-header">
+              <h3>HTML输入</h3>
+              <div class="editor-actions">
+                <!-- 占位元素，确保与右侧高度一致 -->
+              </div>
+            </div>
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="10"
-              placeholder='请输入HTML代码，例如：&lt;div&gt;&lt;h1&gt;Hello World&lt;/h1&gt;&lt;p&gt;This is a paragraph.&lt;/p&gt;&lt;/div&gt;'
-              resize="vertical"
+              language="html"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
+        </div>
+        
+        <!-- 右侧输出区域 -->
+        <div class="column output-column">
+          <div class="output-section">
+            <div class="editor-header">
+              <h3>HTML输出</h3>
+              <div class="editor-actions">
+                <el-button type="success" @click="copyResult">
+                  <i class="fas fa-copy"></i> 复制结果
+                </el-button>
+              </div>
+            </div>
+            <AceEditor
+              v-model="outputData"
+              language="html"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
+            />
+          </div>
+        </div>
+      </div>
       
       <div class="button-group">
         <el-button type="primary" @click="formatHtml">
@@ -33,24 +61,7 @@
         <el-button @click="clearData">
           <i class="fas fa-trash"></i> 清空
         </el-button>
-        <el-button type="success" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </el-button>
       </div>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <div class="output-section">
-            <el-input
-              v-model="outputData"
-              type="textarea"
-              :rows="10"
-              placeholder="格式化后的HTML结果将显示在这里"
-              resize="vertical"
-            />
-          </div>
-        </el-col>
-      </el-row>
       
       <div class="validation-result" v-if="validationResult">
         <el-alert
@@ -65,8 +76,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
+import AceEditor from '../AceEditor.vue'
+
+// 注入主题
+const theme = inject('theme', ref('light'))
 
 // 数据模型
 const inputData = ref('')
@@ -183,56 +198,88 @@ const copyResult = async () => {
   }
 }
 
-// 简单的HTML格式化函数
+// 改进的HTML格式化函数
 const formatHtmlString = (html) => {
-  let formatted = ''
-  let indent = ''
-  const tab = '  ' // 2个空格缩进
-  let inTag = false
-  let inScript = false
-  let inStyle = false
+  // 移除多余的空白字符但保留必要的结构
+  let formatted = html
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
   
-  for (let i = 0; i < html.length; i++) {
-    const char = html.charAt(i)
-    
-    // 检查是否进入script或style标签
-    if (html.substring(i, i + 7).toLowerCase() === '<script') {
-      inScript = true
-    } else if (html.substring(i, i + 8).toLowerCase() === '</script') {
-      inScript = false
-    } else if (html.substring(i, i + 6).toLowerCase() === '<style') {
-      inStyle = true
-    } else if (html.substring(i, i + 7).toLowerCase() === '</style') {
-      inStyle = false
+  // 使用更智能的HTML格式化方法
+  const tab = '  '; // 2个空格缩进
+  let result = '';
+  let indentLevel = 0;
+  
+  // 预定义自闭合标签和特殊标签
+  const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+  const inlineTags = ['a', 'abbr', 'acronym', 'b', 'bdo', 'big', 'br', 'button', 'cite', 'code', 'dfn', 'em', 'i', 'img', 'input', 'kbd', 'label', 'map', 'object', 'q', 'samp', 'script', 'select', 'small', 'span', 'strong', 'sub', 'sup', 'textarea', 'time', 'tt', 'var'];
+  const formatTags = ['html', 'head', 'body', 'div', 'section', 'article', 'aside', 'nav', 'header', 'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'blockquote', 'pre', 'ul', 'ol', 'li', 'dl', 'dt', 'dd', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'form', 'fieldset', 'legend'];
+  
+  // 使用正则表达式解析HTML标签
+  const tagRegex = /<[^>]+>/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = tagRegex.exec(formatted)) !== null) {
+    // 添加标签前的文本内容
+    const textBeforeTag = formatted.substring(lastIndex, match.index);
+    if (textBeforeTag.trim()) {
+      // 如果文本前后有换行符，保持缩进
+      const lines = textBeforeTag.split('\n');
+      result += lines.map((line, index) => {
+        if (index === 0 && !line.trim()) return line;
+        return line.trim() ? tab.repeat(indentLevel) + line.trim() : line;
+      }).join('\n') + '\n';
     }
     
-    if (char === '<' && !inScript && !inStyle) {
-      // 开始标签
-      if (html.charAt(i + 1) === '/') {
-        // 结束标签
-        indent = indent.slice(0, -tab.length)
-        formatted += '\n' + indent + char
+    const tag = match[0];
+    const tagName = tag.match(/<\/?([a-zA-Z]+)/)?.[1]?.toLowerCase() || '';
+    const isEndTag = tag.startsWith('</');
+    const isSelfClosing = tag.endsWith('/>') || selfClosingTags.includes(tagName);
+    const isInlineTag = inlineTags.includes(tagName);
+    const shouldFormatTag = formatTags.includes(tagName);
+    
+    // 处理标签
+    if (isEndTag) {
+      // 结束标签
+      if (shouldFormatTag && !isInlineTag) {
+        indentLevel = Math.max(0, indentLevel - 1);
+        result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
       } else {
-        // 开始标签
-        formatted += '\n' + indent + char
-        // 不对自闭合标签增加缩进
-        if (html.substring(i).indexOf('>') > html.substring(i).indexOf('/')) {
-          // 不是自闭合标签
-          indent += tab
-        }
+        result += tag;
       }
-      inTag = true
-    } else if (char === '>' && inTag && !inScript && !inStyle) {
-      // 标签结束
-      formatted += char
-      inTag = false
+    } else if (isSelfClosing) {
+      // 自闭合标签
+      if (shouldFormatTag) {
+        result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
+      } else {
+        result += tag;
+      }
     } else {
-      formatted += char
+      // 开始标签
+      if (shouldFormatTag && !isInlineTag) {
+        result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
+        indentLevel++;
+      } else {
+        result += tag;
+      }
     }
+    
+    lastIndex = match.index + tag.length;
   }
   
-  // 移除第一行的换行符并清理多余的空白
-  return formatted.trim()
+  // 添加剩余的文本
+  const remainingText = formatted.substring(lastIndex);
+  if (remainingText.trim()) {
+    result += tab.repeat(indentLevel) + remainingText.trim();
+  }
+  
+  // 清理多余的空白行，但保留必要的结构
+  return result
+    .replace(/\n\s*\n/g, '\n') // 移除多余空行
+    .replace(/^\s*\n/g, '') // 移除开头的空行
+    .trim();
 }
 
 // 初始化示例数据
@@ -245,17 +292,19 @@ inputData.value = '<!DOCTYPE html><html><head><title>Test</title></head><body><h
 }
 
 .tool-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .tool-header h2 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;
   color: #333;
+  font-size: 1.5rem;
 }
 
 .tool-header p {
   margin: 0;
   color: #666;
+  font-size: 0.9rem;
 }
 
 .tool-content {
@@ -264,9 +313,47 @@ inputData.value = '<!DOCTYPE html><html><head><title>Test</title></head><body><h
   gap: 1.5rem;
 }
 
+/* 两栏布局 */
+.two-column-layout {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-column,
+.output-column {
+  flex: 1;
+}
+
 .input-section,
 .output-section {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  flex: 1;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.editor-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .button-group {
@@ -287,6 +374,10 @@ inputData.value = '<!DOCTYPE html><html><head><title>Test</title></head><body><h
 }
 
 @media (max-width: 768px) {
+  .two-column-layout {
+    flex-direction: column;
+  }
+  
   .button-group {
     flex-direction: column;
     align-items: center;

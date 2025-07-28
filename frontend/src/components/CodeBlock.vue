@@ -1,13 +1,29 @@
 <template>
-  <el-card class="code-block-container" shadow="never" :data-theme="theme">
+  <el-card class="code-block-container" shadow="never" :data-theme="theme" :class="{ 'fullscreen': isFullscreen }">
     <div class="code-block-header" :data-theme="theme" v-if="showHeader">
       <div class="language-info">{{ displayLanguage }}</div>
       <div class="actions">
         <el-button 
-          class="copy-btn" 
+          class="action-btn" 
+          size="small" 
+          @click="toggleFullscreen"
+        >
+          <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'"></i> 
+          {{ isFullscreen ? '退出全屏' : '全屏' }}
+        </el-button>
+        <el-button 
+          class="action-btn" 
+          size="small" 
+          @click="formatCode"
+          v-if="canFormat"
+        >
+          <i class="fas fa-magic"></i> 格式化
+        </el-button>
+        <el-button 
+          class="action-btn" 
+          type="success" 
           size="small" 
           @click="copyCode"
-          type="success"
         >
           <i class="fas fa-copy"></i> {{ copied ? '已复制' : '复制' }}
         </el-button>
@@ -25,7 +41,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUpdated, computed, watch } from 'vue'
+import { ref, onMounted, onUpdated, onBeforeUnmount, computed, watch } from 'vue'
 import { ElCard, ElButton } from 'element-plus'
 import Prism from 'prismjs'
 import 'prismjs/themes/prism.css'
@@ -60,9 +76,12 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['update:code'])
+
 const codeBlockRef = ref(null)
 const codeRef = ref(null)
 const copied = ref(false)
+const isFullscreen = ref(false)
 
 // 语言映射
 const languageMap = {
@@ -97,6 +116,11 @@ const displayLanguage = computed(() => {
     'text': 'Text'
   }
   return langNames[lang] || lang
+})
+
+// 检查是否可以格式化
+const canFormat = computed(() => {
+  return ['json', 'html', 'xml', 'css', 'javascript', 'js'].includes(prismLanguage.value)
 })
 
 // 语言检测函数
@@ -161,9 +185,50 @@ const copyCode = async () => {
   }
 }
 
+// 格式化代码
+const formatCode = () => {
+  let formatted = props.code
+  try {
+    if (prismLanguage.value === 'json') {
+      formatted = JSON.stringify(JSON.parse(props.code), null, 2)
+    } else if (prismLanguage.value === 'html' || prismLanguage.value === 'xml') {
+      // 简单的HTML/XML格式化
+      formatted = props.code.replace(/></g, '>\n<')
+    } else if (prismLanguage.value === 'css') {
+      // CSS格式化
+      formatted = props.code.replace(/;/g, ';\n').replace(/}/g, '}\n')
+    } else if (prismLanguage.value === 'javascript' || prismLanguage.value === 'js') {
+      // JavaScript格式化（简单处理）
+      formatted = props.code.replace(/{/g, '{\n').replace(/}/g, '\n}')
+    }
+    
+    // 更新父组件的code值
+    emit('update:code', formatted)
+  } catch (e) {
+    console.error('格式化错误:', e)
+  }
+}
+
+// 全屏切换
+const toggleFullscreen = () => {
+  isFullscreen.value = !isFullscreen.value
+  if (isFullscreen.value) {
+    document.body.classList.add('codeblock-fullscreen-active')
+  } else {
+    document.body.classList.remove('codeblock-fullscreen-active')
+  }
+}
+
 // 在挂载时高亮代码
 onMounted(() => {
   highlightCode()
+})
+
+// 在卸载前确保退出全屏状态
+onBeforeUnmount(() => {
+  if (isFullscreen.value) {
+    document.body.classList.remove('codeblock-fullscreen-active')
+  }
 })
 
 // 在更新时重新高亮代码
@@ -189,6 +254,23 @@ watch(() => props.language, () => {
   background: #f8fafc;
   margin: 10px 0;
   border: 1px solid #e2e8f0;
+  position: relative;
+}
+
+.code-block-container.fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+}
+
+.codeblock-fullscreen-active {
+  overflow: hidden;
 }
 
 /* 暗色主题 */
@@ -235,6 +317,32 @@ watch(() => props.language, () => {
   gap: 8px;
 }
 
+.action-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: #5a6fd8;
+}
+
+.code-block-container[data-theme="dark"] .action-btn {
+  background: #5a6fd8;
+}
+
+.code-block-container[data-theme="dark"] .action-btn:hover {
+  background: #4a5fc8;
+}
+
 .copy-btn {
   background: #4ade80;
   color: white;
@@ -251,10 +359,6 @@ watch(() => props.language, () => {
 
 .copy-btn:hover {
   background: #22c55e;
-}
-
-.copy-btn:active {
-  background: #16a34a;
 }
 
 /* 暗色主题下的复制按钮 */
@@ -278,7 +382,9 @@ watch(() => props.language, () => {
 .code-block {
   margin: 0;
   border-radius: 0;
-  max-height: 400px;
+  max-height: 800px; /* 增加高度到800px */
+  min-height: 200px; /* 设置最小高度 */
+  height: auto; /* 自动高度 */
   overflow: auto;
 }
 

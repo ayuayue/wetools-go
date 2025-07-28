@@ -22,12 +22,11 @@
                 </el-select>
               </div>
             </div>
-            <el-input
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="10"
-              :placeholder="getPlaceholder(inputFormat)"
-              resize="vertical"
+              :language="inputFormat"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
         </el-col>
@@ -47,12 +46,12 @@
                 </el-select>
               </div>
             </div>
-            <el-input
+            <AceEditor
               v-model="outputData"
-              type="textarea"
-              :rows="10"
-              placeholder="转换结果将显示在这里"
-              resize="vertical"
+              :language="outputFormat"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
             />
           </div>
         </el-col>

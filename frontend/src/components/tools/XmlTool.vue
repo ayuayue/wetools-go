@@ -6,19 +6,47 @@
     </div>
     
     <div class="tool-content">
-      <el-row :gutter="20">
-        <el-col :span="24">
+      <!-- 两栏布局 -->
+      <div class="two-column-layout">
+        <!-- 左侧输入区域 -->
+        <div class="column input-column">
           <div class="input-section">
-            <el-input
+            <div class="editor-header">
+              <h3>XML输入</h3>
+              <div class="editor-actions">
+                <!-- 占位元素，确保与右侧高度一致 -->
+              </div>
+            </div>
+            <AceEditor
               v-model="inputData"
-              type="textarea"
-              :rows="10"
-              placeholder='请输入XML数据，例如：&lt;root&gt;&lt;name&gt;WeTools&lt;/name&gt;&lt;type&gt;developer tools&lt;/type&gt;&lt;/root&gt;'
-              resize="vertical"
+              language="xml"
+              :theme="theme"
+              :showHeader="false"
             />
           </div>
-        </el-col>
-      </el-row>
+        </div>
+        
+        <!-- 右侧输出区域 -->
+        <div class="column output-column">
+          <div class="output-section">
+            <div class="editor-header">
+              <h3>XML输出</h3>
+              <div class="editor-actions">
+                <el-button type="success" @click="copyResult">
+                  <i class="fas fa-copy"></i> 复制结果
+                </el-button>
+              </div>
+            </div>
+            <AceEditor
+              v-model="outputData"
+              language="xml"
+              :theme="theme"
+              :readonly="true"
+              :showHeader="false"
+            />
+          </div>
+        </div>
+      </div>
       
       <div class="button-group">
         <el-button type="primary" @click="formatXml">
@@ -33,24 +61,7 @@
         <el-button @click="clearData">
           <i class="fas fa-trash"></i> 清空
         </el-button>
-        <el-button type="success" @click="copyResult">
-          <i class="fas fa-copy"></i> 复制结果
-        </el-button>
       </div>
-      
-      <el-row :gutter="20">
-        <el-col :span="24">
-          <div class="output-section">
-            <el-input
-              v-model="outputData"
-              type="textarea"
-              :rows="10"
-              placeholder="格式化后的XML结果将显示在这里"
-              resize="vertical"
-            />
-          </div>
-        </el-col>
-      </el-row>
       
       <div class="validation-result" v-if="validationResult">
         <el-alert
@@ -65,8 +76,12 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, inject } from 'vue'
 import { ElCard, ElRow, ElCol, ElInput, ElButton, ElAlert } from 'element-plus'
+import AceEditor from '../AceEditor.vue'
+
+// 注入主题
+const theme = inject('theme', ref('light'))
 
 // 数据模型
 const inputData = ref('')
@@ -185,37 +200,64 @@ const copyResult = async () => {
   }
 }
 
-// 简单的XML格式化函数
+// 改进的XML格式化函数
 const formatXmlString = (xml) => {
-  let formatted = ''
-  let indent = ''
-  const tab = '  ' // 2个空格缩进
-  let inTag = false
+  // 移除多余的空白字符但保留必要的结构
+  let formatted = xml.trim()
   
-  for (let i = 0; i < xml.length; i++) {
-    const char = xml.charAt(i)
-    
-    if (char === '<' && xml.charAt(i + 1) !== '/') {
-      // 开始标签
-      formatted += '\n' + indent + char
-      indent += tab
-      inTag = true
-    } else if (char === '<' && xml.charAt(i + 1) === '/') {
-      // 结束标签
-      indent = indent.slice(0, -tab.length)
-      formatted += '\n' + indent + char
-      inTag = true
-    } else if (char === '>' && inTag) {
-      // 标签结束
-      formatted += char
-      inTag = false
-    } else {
-      formatted += char
+  // 使用更智能的XML格式化方法
+  const tab = '  '; // 2个空格缩进
+  let result = '';
+  let indentLevel = 0;
+  
+  // 预定义自闭合标签
+  const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+  
+  // 使用正则表达式解析XML标签
+  const tagRegex = /<[^>]+>/g;
+  let lastIndex = 0;
+  let match;
+  
+  while ((match = tagRegex.exec(formatted)) !== null) {
+    // 添加标签前的文本内容
+    const textBeforeTag = formatted.substring(lastIndex, match.index);
+    if (textBeforeTag.trim()) {
+      result += textBeforeTag.trim();
     }
+    
+    const tag = match[0];
+    const tagName = tag.match(/<\/?([a-zA-Z]+)/)?.[1]?.toLowerCase() || '';
+    const isEndTag = tag.startsWith('</');
+    const isSelfClosing = tag.endsWith('/>') || selfClosingTags.includes(tagName);
+    
+    // 处理标签
+    if (isEndTag) {
+      // 结束标签
+      indentLevel = Math.max(0, indentLevel - 1);
+      result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
+    } else if (isSelfClosing) {
+      // 自闭合标签
+      result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
+    } else {
+      // 开始标签
+      result += (result.endsWith('\n') ? '' : '\n') + tab.repeat(indentLevel) + tag + '\n';
+      indentLevel++;
+    }
+    
+    lastIndex = match.index + tag.length;
   }
   
-  // 移除第一行的换行符并清理多余的空白
-  return formatted.trim()
+  // 添加剩余的文本
+  const remainingText = formatted.substring(lastIndex);
+  if (remainingText.trim()) {
+    result += remainingText.trim();
+  }
+  
+  // 清理多余的空白行，但保留必要的结构
+  return result
+    .replace(/\n\s*\n/g, '\n') // 移除多余空行
+    .replace(/^\s*\n/g, '') // 移除开头的空行
+    .trim();
 }
 
 // 初始化示例数据
@@ -228,17 +270,19 @@ inputData.value = '<root><name>WeTools</name><type>developer tools</type><featur
 }
 
 .tool-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .tool-header h2 {
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.25rem 0;
   color: #333;
+  font-size: 1.5rem;
 }
 
 .tool-header p {
   margin: 0;
   color: #666;
+  font-size: 0.9rem;
 }
 
 .tool-content {
@@ -247,9 +291,47 @@ inputData.value = '<root><name>WeTools</name><type>developer tools</type><featur
   gap: 1.5rem;
 }
 
+/* 两栏布局 */
+.two-column-layout {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-column,
+.output-column {
+  flex: 1;
+}
+
 .input-section,
 .output-section {
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: 100%;
+  flex: 1;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.editor-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.editor-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .button-group {
@@ -270,6 +352,10 @@ inputData.value = '<root><name>WeTools</name><type>developer tools</type><featur
 }
 
 @media (max-width: 768px) {
+  .two-column-layout {
+    flex-direction: column;
+  }
+  
   .button-group {
     flex-direction: column;
     align-items: center;
