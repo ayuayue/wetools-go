@@ -63,7 +63,7 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		HideWindowOnClose: true, // 关闭窗口时隐藏而不是退出
+		HideWindowOnClose: false, // 关闭窗口时隐藏而不是退出
 		OnStartup: app.startup,
 		Bind: []interface{}{
 			app,

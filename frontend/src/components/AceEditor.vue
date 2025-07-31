@@ -116,7 +116,7 @@ const initEditor = () => {
   if (!editorContainer.value) return
 
   editor = ace.edit(editorContainer.value, {
-    maxLines: 30,
+    maxLines: 25,
     theme: isDarkTheme.value ? 'ace/theme/dracula' : 'ace/theme/chrome',
     mode: `ace/mode/${getLanguageMode()}`,
     value: props.modelValue,
@@ -333,7 +333,7 @@ onBeforeUnmount(() => {
 }
 
 .editor-container {
-  min-height: 550px;
+  min-height: 500px;
   height: 100%;
   overflow: auto;
   position: relative;

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="toolGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="45" fill="url(#bgGradient)"/>
+  
+  <!-- Tool symbol - combination of shapes representing multiple tools -->
+  <g transform="translate(50,50) scale(0.7)">
+    <!-- Gear -->
+    <g transform="rotate(-20)">
+      <circle cx="0" cy="0" r="8" fill="white" opacity="0.8"/>
+      <path d="M0,-12 L2,-8 L6,-9 L8,-6 L6,-2 L9,0 L8,3 L5,5 L6,9 L3,10 L0,8 L-3,10 L-6,9 L-5,5 L-8,3 L-9,0 L-6,-2 L-5,-6 L-2,-8 Z" 
+            fill="url(#toolGradient)"/>
+      <circle cx="0" cy="0" r="3" fill="white"/>
+    </g>
+    
+    <!-- Wrench -->
+    <path d="M15,5 L25,15 L23,17 L13,7 Z" fill="white" opacity="0.9"/>
+    <ellipse cx="24" cy="16" rx="3" ry="1.5" fill="white" opacity="0.9" transform="rotate(45 24 16)"/>
+    
+    <!-- Screwdriver -->
+    <rect x="-20" y="-2" width="15" height="4" rx="2" fill="url(#toolGradient)" transform="rotate(-30)"/>
+    <circle cx="-22" cy="0" r="3" fill="white" opacity="0.9" transform="rotate(-30)"/>
+  </g>
+  
+  <!-- Outer ring -->
+  <circle cx="50" cy="50" r="42" fill="none" stroke="white" stroke-width="2" opacity="0.5"/>
+</svg>

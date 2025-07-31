@@ -34,6 +34,12 @@ export const menuItems = [
         title: 'URL编解码',
         type: 'url',
         icon: 'fas fa-link'
+      },
+      {
+        id: 'jwt',
+        title: 'JWT工具',
+        type: 'jwt',
+        icon: 'fas fa-key'
       }
     ]
   },
@@ -112,26 +118,6 @@ export const menuItems = [
     ]
   },
   {
-    id: 'settings',
-    title: '系统设置',
-    icon: 'fas fa-cog',
-    collapsed: false,
-    items: [
-      {
-        id: 'proxy-config',
-        title: '代理设置',
-        type: 'proxy',
-        icon: 'fas fa-network-wired'
-      },
-      {
-        id: 'app-settings',
-        title: '应用设置',
-        type: 'settings',
-        icon: 'fas fa-sliders-h'
-      }
-    ]
-  },
-  {
     id: 'code-execution',
     title: '代码运行',
     icon: 'fas fa-code',
@@ -148,6 +134,32 @@ export const menuItems = [
         title: 'JavaScript运行器',
         type: 'jsrunner',
         icon: 'fab fa-js'
+      }
+    ]
+  },
+  {
+    id: 'settings',
+    title: '系统设置',
+    icon: 'fas fa-cog',
+    collapsed: false,
+    items: [
+      {
+        id: 'proxy-config',
+        title: '代理设置',
+        type: 'proxy',
+        icon: 'fas fa-network-wired'
+      },
+      {
+        id: 'app-settings',
+        title: '应用设置',
+        type: 'settings',
+        icon: 'fas fa-sliders-h'
+      },
+      {
+        id: 'about',
+        title: '关于',
+        type: 'about',
+        icon: 'fas fa-info-circle'
       }
     ]
   }

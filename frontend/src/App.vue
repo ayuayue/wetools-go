@@ -2,7 +2,10 @@
   <el-container class="app-container" :class="{ 'dark-theme': isDarkTheme }">
     <el-header class="app-header">
       <div class="header-content">
-        <h1><i class="fas fa-toolbox"></i> WeTools 开发者工具箱</h1>
+        <h1>
+          <img src="./assets/images/appicon.svg" alt="WeTools Icon" class="app-icon" />
+          WeTools 开发者工具箱
+        </h1>
       </div>
       <div class="header-actions">
         <el-button 
@@ -70,12 +73,13 @@ body {
 .app-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 0.75rem 1rem;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
+  padding: 0.25rem 1rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: none;
+  height: 20px;
 }
 
 .header-content h1 {
@@ -85,6 +89,11 @@ body {
   gap: 0.5rem;
   white-space: nowrap;
   margin: 0;
+}
+
+.app-icon {
+  height: 24px;
+  width: 24px;
 }
 
 .header-content p {

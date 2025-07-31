@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { ref, shallowRef, onMounted, reactive, onBeforeMount, provide, computed } from 'vue'
+import { ref, shallowRef, onMounted, reactive, onBeforeMount, provide, computed, h } from 'vue'
 import { ElContainer, ElAside, ElMain, ElFooter, ElButton, ElTabs, ElTabPane, ElIcon, ElDropdown, ElDropdownMenu, ElDropdownItem } from 'element-plus'
 import { Close, Lock, Unlock } from '@element-plus/icons-vue'
 import Sidebar from './Sidebar.vue'
@@ -130,12 +130,14 @@ import ProxyTool from './tools/ProxyTool.vue'
 import SettingsTool from './tools/SettingsTool.vue'
 import HtmlRunner from './tools/HtmlRunner.vue'
 import JsRunner from './tools/JsRunner.vue'
+import JwtTool from './tools/JwtTool.vue'
+import AboutTool from './tools/AboutTool.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 主题和菜单状态
 const isDarkTheme = ref(false)
 const isSidebarCollapsed = ref(false)
-const sidebarWidth = ref(220)
+const sidebarWidth = ref(180)
 
 // 计算主题
 const theme = computed(() => isDarkTheme.value ? 'dark' : 'light')
@@ -163,7 +165,9 @@ const toolComponents = {
   proxy: ProxyTool,
   settings: SettingsTool,
   htmlrunner: HtmlRunner,
-  jsrunner: JsRunner
+  jsrunner: JsRunner,
+  jwt: JwtTool,
+  about: AboutTool
 }
 
 // 标签页管理
@@ -202,7 +206,7 @@ const startResize = (e) => {
   
   const doDrag = (e) => {
     const newWidth = startWidth + (e.clientX - startX)
-    sidebarWidth.value = Math.max(180, Math.min(400, newWidth))
+    sidebarWidth.value = Math.max(150, Math.min(400, newWidth))
   }
   
   const stopDrag = () => {
@@ -218,6 +222,12 @@ const startResize = (e) => {
 const handleMenuItemClick = (tool) => {
   // 根据tool.type动态加载对应的组件
   const component = toolComponents[tool.type] || JsonTool
+  
+  // 检查是否是彩蛋标签页，如果是则移除
+  const easterEggTabIndex = openTabs.value.findIndex(tab => tab.id === 'easter-egg')
+  if (easterEggTabIndex !== -1) {
+    openTabs.value.splice(easterEggTabIndex, 1)
+  }
   
   // 检查标签页是否已存在
   const existingTab = openTabs.value.find(tab => tab.id === tool.id)
@@ -392,11 +402,41 @@ const removeTab = (targetName) => {
   activeTab.value = activeName
   openTabs.value = tabs.filter(tab => tab.id !== targetName)
   
-  // 如果没有标签页了，添加默认标签页
+  // 如果没有标签页了，显示默认工具而不是彩蛋
   if (openTabs.value.length === 0) {
     const defaultTool = menuData[0].items[0]
     handleMenuItemClick(defaultTool)
   }
+}
+
+// 显示彩蛋内容
+const showEasterEgg = () => {
+  // 创建一个特殊的彩蛋标签页
+  const easterEggTab = {
+    id: 'easter-egg',
+    title: '🎉 惊喜彩蛋',
+    description: '',
+    icon: 'fas fa-gift',
+    component: {
+      render() {
+        return h('div', { class: 'easter-egg-container' }, [
+          h('div', { class: 'easter-egg-content' }, [
+            h('h2', { class: 'easter-egg-title' }, '🎉 恭喜你发现彩蛋！'),
+            h('p', { class: 'easter-egg-text' }, '感谢使用 WeTools 开发者工具箱！'),
+            h('p', { class: 'easter-egg-text' }, '这个工具箱旨在帮助开发者提高工作效率。'),
+            h('p', { class: 'easter-egg-text' }, '如果你喜欢这个工具，欢迎推荐给更多的朋友！'),
+            h('div', { class: 'easter-egg-icon' }, '🛠️'),
+            h('p', { class: 'easter-egg-text small' }, '继续探索，也许还有更多惊喜等着你...')
+          ])
+        ])
+      }
+    },
+    tool: {},
+    pinned: false
+  }
+  
+  openTabs.value.push(easterEggTab)
+  activeTab.value = 'easter-egg'
 }
 
 // 切换标签页
@@ -432,7 +472,7 @@ onBeforeMount(() => {
 })
 
 onMounted(() => {
-  // 初始化时设置默认工具
+  // 初始化时设置默认工具，不显示彩蛋
   const defaultTool = menuData[0].items[0]
   handleMenuItemClick(defaultTool)
 })
@@ -481,13 +521,13 @@ onMounted(() => {
 
 .footer {
   text-align: center;
-  padding: 0.8rem;
+  padding: 0.5rem;
   color: #666;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   border-top: 1px solid #e1e5e9;
   background: white;
   flex-shrink: 0;
-  height: 45px; /* 设置固定高度 */
+  height: 35px; /* 设置固定高度 */
 }
 
 /* 标签页样式 */
@@ -644,10 +684,69 @@ onMounted(() => {
   background: #555 !important;
 }
 
+/* 彩蛋内容样式 */
+.easter-egg-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 2rem;
+}
+
+.easter-egg-content {
+  text-align: center;
+  max-width: 600px;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4edf9 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.easter-egg-title {
+  color: #667eea;
+  margin-bottom: 1.5rem;
+  font-size: 2rem;
+}
+
+.easter-egg-text {
+  color: #555;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.easter-egg-text.small {
+  font-size: 0.9rem;
+  color: #888;
+}
+
+.easter-egg-icon {
+  font-size: 4rem;
+  margin: 1.5rem 0;
+}
+
+/* 暗色主题下的彩蛋样式 */
+.dark-theme .easter-egg-content {
+  background: linear-gradient(135deg, #2d3748 0%, #222831 100%);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .easter-egg-title {
+  color: #667eea;
+}
+
+.dark-theme .easter-egg-text {
+  color: #e0e0e0;
+}
+
+.dark-theme .easter-egg-text.small {
+  color: #aaa;
+}
+
 @media (max-width: 768px) {
   .sidebar-wrapper {
     width: 100% !important;
-    max-height: 200px;
+    max-height: 150px;
     border-right: none;
     border-bottom: 1px solid #e1e5e9;
   }

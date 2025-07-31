@@ -39,7 +39,8 @@
       "Bash(go doc:*)",
       "Bash(go list:*)",
       "Bash(cat:*)",
-      "Bash(go clean:*)"
+      "Bash(go clean:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
