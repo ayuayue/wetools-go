@@ -1,5 +1,19 @@
 export namespace main {
 	
+	export class ClipboardItem {
+	    content: string;
+	    timestamp: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClipboardItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.content = source["content"];
+	        this.timestamp = source["timestamp"];
+	    }
+	}
 	export class ProxyConfig {
 	    enabled: boolean;
 	    host: string;

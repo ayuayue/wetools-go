@@ -52,8 +52,8 @@
             <ul class="info-list">
               <li><strong>版本:</strong> v1.0.0</li>
               <li><strong>许可证:</strong> MIT</li>
-              <li><strong>仓库:</strong> <a href="https://github.com/your-username/wetools-go" target="_blank">GitHub</a></li>
-              <li><strong>反馈:</strong> <a href="https://github.com/your-username/wetools-go/issues" target="_blank">问题反馈</a></li>
+              <li><strong>仓库:</strong> <span class="link" @click="() => BrowserOpenURL('https://github.com/ayuayue/wetools-go')">GitHub</span></li>
+              <li><strong>反馈:</strong> <span class="link" @click="() => BrowserOpenURL('https://github.com/ayuayue/wetools-go/issues')">问题反馈</span></li>
             </ul>
           </div>
         </el-col>
@@ -79,8 +79,8 @@
             <h3>联系我们</h3>
             <p>如果您有任何问题或建议，欢迎通过以下方式联系我们：</p>
             <ul class="contact-list">
-              <li><i class="fas fa-envelope"></i> 邮箱: <a href="mailto:support@wetools.com">support@wetools.com</a></li>
-              <li><i class="fab fa-github"></i> GitHub: <a href="https://github.com/your-username/wetools-go" target="_blank">WeTools 项目</a></li>
+              <li><i class="fas fa-envelope"></i> 邮箱: <span class="link" @click="() => BrowserOpenURL('mailto:support@wetools.com')">support@wetools.com</span></li>
+              <li><i class="fab fa-github"></i> GitHub: <span class="link" @click="() => BrowserOpenURL('https://github.com/ayuayue/wetools-go')">WeTools 项目</span></li>
             </ul>
           </div>
         </el-col>
@@ -91,6 +91,7 @@
 
 <script setup>
 import { ElCard, ElRow, ElCol } from 'element-plus'
+import { BrowserOpenURL } from '../../wailsjs/runtime/runtime'
 </script>
 
 <style scoped>
@@ -100,16 +101,19 @@ import { ElCard, ElRow, ElCol } from 'element-plus'
 
 .tool-header {
   margin-bottom: 1.5rem;
+  text-align: left;
 }
 
 .tool-header h2 {
   margin: 0 0 0.5rem 0;
   color: #333;
+  font-size: 1.8rem;
 }
 
 .tool-header p {
   margin: 0;
   color: #666;
+  font-size: 1.1rem;
 }
 
 .tool-content {
@@ -119,22 +123,26 @@ import { ElCard, ElRow, ElCol } from 'element-plus'
 }
 
 .about-section {
-  padding: 1rem;
-  background-color: #f5f7fa;
-  border-radius: 4px;
+  padding: 1.5rem;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid #ebeef5;
 }
 
 .about-section h3 {
   margin: 0 0 1rem 0;
   color: #333;
-  border-bottom: 1px solid #e1e5e9;
+  border-bottom: 2px solid #409eff;
   padding-bottom: 0.5rem;
+  font-size: 1.3rem;
 }
 
 .about-section p {
   color: #555;
-  line-height: 1.6;
+  line-height: 1.7;
   margin-bottom: 1rem;
+  text-align: left;
 }
 
 .feature-list,
@@ -151,13 +159,34 @@ import { ElCard, ElRow, ElCol } from 'element-plus'
 .info-list li,
 .usage-list li,
 .contact-list li {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.7rem;
   color: #555;
+  padding-left: 1.5rem;
+  position: relative;
+  text-align: left;
+}
+
+.feature-list li i,
+.tech-list li i,
+.info-list li i,
+.usage-list li i,
+.contact-list li i {
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  color: #409eff;
+  margin-right: 0.5rem;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
 }
 
 .feature-list li i {
   color: #67c23a;
   margin-right: 0.5rem;
+  top: 0.4rem;
 }
 
 .contact-list a,
@@ -171,13 +200,58 @@ import { ElCard, ElRow, ElCol } from 'element-plus'
   text-decoration: underline;
 }
 
+.link {
+  color: #409eff;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.usage-list li {
+  padding-left: 0;
+  margin-left: 1.5rem;
+}
+
+.usage-list li:before {
+  content: counter(li);
+  counter-increment: li;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: #409eff;
+  color: white;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  margin-right: 0.5rem;
+}
+
+.usage-list {
+  counter-reset: li;
+}
+
 @media (max-width: 768px) {
   .tool-content {
     gap: 1rem;
   }
   
   .about-section {
-    padding: 0.75rem;
+    padding: 1rem;
+  }
+  
+  .tool-header h2 {
+    font-size: 1.5rem;
+  }
+  
+  .about-section h3 {
+    font-size: 1.2rem;
   }
 }
 </style>

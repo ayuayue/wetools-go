@@ -138,6 +138,20 @@ export const menuItems = [
     ]
   },
   {
+    id: 'system',
+    title: '系统工具',
+    icon: 'fas fa-tools',
+    collapsed: false,
+    items: [
+      {
+        id: 'clipboard-manager',
+        title: '剪贴板管理',
+        type: 'clipboard',
+        icon: 'fas fa-clipboard'
+      }
+    ]
+  },
+  {
     id: 'settings',
     title: '系统设置',
     icon: 'fas fa-cog',

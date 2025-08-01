@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.11
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/wailsapp/wails/v2 v2.10.2
 	golang.org/x/sys v0.34.0
 )

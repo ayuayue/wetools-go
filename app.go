@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
+	"os/user"
 	
+	"github.com/atotto/clipboard"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -24,17 +28,208 @@ type ProxyConfig struct {
 	Password string `json:"password"`
 }
 
+// ClipboardItem 剪贴板项目结构
+type ClipboardItem struct {
+	Content   string `json:"content"`
+	Timestamp int64  `json:"timestamp"`
+}
+
 // App struct
 type App struct {
-	ctx         context.Context
-	proxyConfig ProxyConfig
-	proxyServer *http.Server
+	ctx              context.Context
+	proxyConfig      ProxyConfig
+	proxyServer      *http.Server
 	autoStartEnabled bool
+	clipboardHistory []ClipboardItem
+	lastClipboard    string
+	dataDir          string
+	maxRecords       int // 最大保存记录数
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
-	return &App{}
+	app := &App{
+		maxRecords: 1000, // 默认保存1000条记录
+	}
+	app.initDataDir()
+	return app
+}
+
+// loadClipboardHistory 从文件加载剪贴板历史记录
+func (a *App) loadClipboardHistory() {
+	if a.dataDir == "" {
+		return
+	}
+	
+	// 构建剪贴板历史文件路径
+	clipboardFile := filepath.Join(a.dataDir, "clipboard.txt")
+	
+	// 检查文件是否存在
+	if _, err := os.Stat(clipboardFile); os.IsNotExist(err) {
+		// 文件不存在，初始化为空的历史记录
+		a.clipboardHistory = make([]ClipboardItem, 0)
+		// 添加一些示例数据用于测试
+		a.addSampleData()
+		return
+	}
+	
+	// 读取文件内容
+	data, err := os.ReadFile(clipboardFile)
+	if err != nil {
+		fmt.Printf("读取剪贴板历史文件失败: %v\n", err)
+		a.clipboardHistory = make([]ClipboardItem, 0)
+		// 添加一些示例数据用于测试
+		a.addSampleData()
+		return
+	}
+	
+	// 解析文本数据
+	content := string(data)
+	if content == "" {
+		a.clipboardHistory = make([]ClipboardItem, 0)
+		// 添加一些示例数据用于测试
+		a.addSampleData()
+		return
+	}
+	
+	// 按行分割内容
+	lines := strings.Split(content, "\n")
+	var history []ClipboardItem
+	
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		
+		// 解析日期时间和内容
+		// 格式: datetime|content
+		parts := strings.SplitN(line, "|", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		
+		// 解析日期时间字符串为时间戳
+		t, err := time.Parse("2006-01-02 15:04:05", parts[0])
+		if err != nil {
+			// 如果解析失败，尝试使用旧的时间戳格式
+			timestamp, parseErr := strconv.ParseInt(parts[0], 10, 64)
+			if parseErr != nil {
+				continue
+			}
+			// 转换为正确的格式
+			history = append(history, ClipboardItem{
+				Timestamp: timestamp,
+				Content:   parts[1],
+			})
+			continue
+		}
+		
+		// 转换为毫秒时间戳
+		timestamp := t.UnixNano() / int64(time.Millisecond)
+		
+		history = append(history, ClipboardItem{
+			Timestamp: timestamp,
+			Content:   parts[1],
+		})
+	}
+	
+	a.clipboardHistory = history
+	fmt.Printf("加载了 %d 条剪贴板记录\n", len(a.clipboardHistory))
+}
+
+// addSampleData 添加示例数据用于测试
+func (a *App) addSampleData() {
+	// 只在没有数据时添加示例数据
+	if len(a.clipboardHistory) > 0 {
+		return
+	}
+	
+	fmt.Println("添加示例剪贴板数据用于测试")
+	
+	sampleData := []ClipboardItem{
+		{
+			Content:   "示例文本内容1",
+			Timestamp: time.Now().UnixNano() / int64(time.Millisecond),
+		},
+		{
+			Content:   "https://www.example.com",
+			Timestamp: time.Now().Add(-1 * time.Minute).UnixNano() / int64(time.Millisecond),
+		},
+		{
+			Content:   `{"name": "WeTools", "version": "1.0.0"}`,
+			Timestamp: time.Now().Add(-2 * time.Minute).UnixNano() / int64(time.Millisecond),
+		},
+	}
+	
+	a.clipboardHistory = sampleData
+	a.saveClipboardHistory()
+}
+
+// loadSavedProxyConfig 从存储中加载保存的代理配置
+func (a *App) loadSavedProxyConfig() {
+	// 这里应该从某个地方加载保存的配置
+	// 例如，从文件或数据库中读取
+	// 现在我们只是设置一个默认配置
+	// 实际应用中，您可能需要从持久化存储中读取配置
+}
+
+// saveClipboardHistory 保存剪贴板历史记录到文件
+func (a *App) saveClipboardHistory() {
+	if a.dataDir == "" {
+		return
+	}
+	
+	// 构建剪贴板历史文件路径
+	clipboardFile := filepath.Join(a.dataDir, "clipboard.txt")
+	
+	// 构建文本内容
+	var lines []string
+	for _, item := range a.clipboardHistory {
+		// 格式化时间戳为可读格式
+		t := time.Unix(0, item.Timestamp*int64(time.Millisecond))
+		formattedTime := t.Format("2006-01-02 15:04:05")
+		
+		// 格式: datetime|content
+		line := fmt.Sprintf("%s|%s", formattedTime, item.Content)
+		lines = append(lines, line)
+	}
+	
+	// 将所有行连接成一个字符串
+	content := strings.Join(lines, "\n")
+	
+	// 写入文件
+	err := os.WriteFile(clipboardFile, []byte(content), 0644)
+	if err != nil {
+		fmt.Printf("保存剪贴板历史文件失败: %v\n", err)
+		return
+	}
+	
+	fmt.Printf("保存了 %d 条剪贴板记录\n", len(a.clipboardHistory))
+}
+
+// initDataDir 初始化程序数据目录
+func (a *App) initDataDir() {
+	// 获取当前用户
+	usr, err := user.Current()
+	if err != nil {
+		fmt.Printf("获取用户信息失败: %v\n", err)
+		return
+	}
+	
+	// 构建数据目录路径
+	a.dataDir = filepath.Join(usr.HomeDir, ".wetools-go")
+	
+	// 创建目录（如果不存在）
+	err = os.MkdirAll(a.dataDir, 0755)
+	if err != nil {
+		fmt.Printf("创建数据目录失败: %v\n", err)
+		return
+	}
+	
+	fmt.Printf("数据目录: %s\n", a.dataDir)
+	
+	// 加载已保存的剪贴板历史记录
+	a.loadClipboardHistory()
 }
 
 // startup is called when the app starts. The context is saved
@@ -50,24 +245,205 @@ func (a *App) startup(ctx context.Context) {
 		a.StartProxyServer()
 	}
 	
-	// 创建系统托盘菜单
-	a.createTrayMenu()
+	// 初始化剪贴板历史记录
+	a.clipboardHistory = make([]ClipboardItem, 0)
+	a.lastClipboard = ""
+	
+	// 启动剪贴板监听
+	go a.startClipboardListener()
 }
 
-// loadSavedProxyConfig 从存储中加载保存的代理配置
-func (a *App) loadSavedProxyConfig() {
-	// 这里应该从某个地方加载保存的配置
-	// 例如，从文件或数据库中读取
-	// 现在我们只是设置一个默认配置
-	// 实际应用中，您可能需要从持久化存储中读取配置
+// startClipboardListener 启动剪贴板监听器
+func (a *App) startClipboardListener() {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	
+	// 重试次数
+	retryCount := 0
+	maxRetries := 5
+	
+	fmt.Println("剪贴板监听器已启动")
+	
+	for {
+		select {
+		case <-ticker.C:
+			// 读取剪贴板内容
+			content, err := clipboard.ReadAll()
+			if err != nil {
+				// 忽略特定的Windows成功错误
+				if err.Error() == "The operation completed successfully." {
+					// 这是Windows的一个已知问题，忽略它
+					continue
+				}
+				
+				fmt.Printf("读取剪贴板失败: %v\n", err)
+				retryCount++
+				
+				// 如果重试次数超过最大值，重置重试计数
+				if retryCount > maxRetries {
+					retryCount = 0
+				}
+				continue
+			}
+			
+			retryCount = 0 // 重置重试计数
+			
+			// 如果内容发生变化，添加到历史记录
+			if content != "" && content != a.lastClipboard {
+				fmt.Printf("检测到新的剪贴板内容: %s\n", content)
+				a.lastClipboard = content
+				a.addClipboardItem(content)
+			}
+		case <-a.ctx.Done():
+			// 应用关闭时停止监听
+			fmt.Println("剪贴板监听器已停止")
+			return
+		}
+	}
 }
 
-// createTrayMenu 创建系统托盘菜单
-func (a *App) createTrayMenu() {
-	// 当前Wails版本不支持系统托盘菜单
-	// 系统托盘功能将在未来版本中实现
-	fmt.Println("系统托盘功能暂不可用")
+// addClipboardItem 添加剪贴板项目到历史记录
+func (a *App) addClipboardItem(content string) {
+	item := ClipboardItem{
+		Content:   content,
+		Timestamp: time.Now().UnixNano() / int64(time.Millisecond), // 转换为毫秒时间戳
+	}
+	
+	// 添加到历史记录开头
+	a.clipboardHistory = append([]ClipboardItem{item}, a.clipboardHistory...)
+	
+	// 限制历史记录数量为最大记录数
+	if len(a.clipboardHistory) > a.maxRecords {
+		a.clipboardHistory = a.clipboardHistory[:a.maxRecords]
+	}
+	
+	// 保存历史记录到文件
+	a.saveClipboardHistory()
+	
+	fmt.Printf("添加剪贴板记录: %s\n", content)
 }
+
+// GetClipboardHistory 获取剪贴板历史记录
+func (a *App) GetClipboardHistory() []ClipboardItem {
+	return a.clipboardHistory
+}
+
+// GetClipboardHistoryPage 获取分页的剪贴板历史记录
+func (a *App) GetClipboardHistoryPage(page, pageSize int) ([]ClipboardItem, int) {
+	total := len(a.clipboardHistory)
+	
+	// 计算总页数
+	totalPages := 0
+	if total > 0 && pageSize > 0 {
+		totalPages = (total + pageSize - 1) / pageSize
+	}
+	
+	// 确保页码有效
+	if page < 1 {
+		page = 1
+	}
+	if totalPages > 0 && page > totalPages {
+		page = totalPages
+	}
+	
+	// 如果没有记录或页面大小无效，返回空数组
+	if total == 0 || pageSize <= 0 {
+		return []ClipboardItem{}, totalPages
+	}
+	
+	// 计算起始和结束索引
+	start := (page - 1) * pageSize
+	end := start + pageSize
+	
+	// 确保结束索引不超过总长度
+	if end > total {
+		end = total
+	}
+	
+	// 确保起始索引不超过总长度
+	if start >= total {
+		return []ClipboardItem{}, totalPages
+	}
+	
+	// 返回当前页的数据和总页数
+	return a.clipboardHistory[start:end], totalPages
+}
+
+// ClearClipboardHistory 清空剪贴板历史记录
+func (a *App) ClearClipboardHistory() {
+	a.clipboardHistory = make([]ClipboardItem, 0)
+	a.saveClipboardHistory()
+}
+
+// RemoveClipboardItem 删除指定的剪贴板项目
+func (a *App) RemoveClipboardItem(index int) error {
+	if index < 0 || index >= len(a.clipboardHistory) {
+		return fmt.Errorf("索引超出范围")
+	}
+	
+	// 删除指定项目
+	a.clipboardHistory = append(a.clipboardHistory[:index], a.clipboardHistory[index+1:]...)
+	a.saveClipboardHistory()
+	return nil
+}
+
+// CopyToClipboard 复制内容到剪贴板
+func (a *App) CopyToClipboard(content string) error {
+	return clipboard.WriteAll(content)
+}
+
+// SetMaxRecords 设置最大保存记录数
+func (a *App) SetMaxRecords(max int) {
+	if max > 0 {
+		a.maxRecords = max
+		// 如果当前记录数超过新设置的最大值，清理旧记录
+		if len(a.clipboardHistory) > a.maxRecords {
+			a.clipboardHistory = a.clipboardHistory[:a.maxRecords]
+			a.saveClipboardHistory()
+		}
+	}
+}
+
+// GetMaxRecords 获取最大保存记录数
+func (a *App) GetMaxRecords() int {
+	return a.maxRecords
+}
+
+// OpenClipboardFile 打开剪贴板文件
+func (a *App) OpenClipboardFile() error {
+	if a.dataDir == "" {
+		return fmt.Errorf("数据目录未初始化")
+	}
+	
+	// 构建剪贴板文件路径
+	clipboardFile := filepath.Join(a.dataDir, "clipboard.txt")
+	
+	// 检查文件是否存在，如果不存在则创建
+	if _, err := os.Stat(clipboardFile); os.IsNotExist(err) {
+		// 创建空文件
+		file, err := os.Create(clipboardFile)
+		if err != nil {
+			return fmt.Errorf("创建剪贴板文件失败: %v", err)
+		}
+		file.Close()
+	}
+	
+	// 根据操作系统打开文件
+	switch runtime.GOOS {
+	case "windows":
+		cmd := exec.Command("cmd", "/c", "start", "", clipboardFile)
+		return cmd.Run()
+	case "darwin":
+		cmd := exec.Command("open", clipboardFile)
+		return cmd.Run()
+	case "linux":
+		cmd := exec.Command("xdg-open", clipboardFile)
+		return cmd.Run()
+	default:
+		return fmt.Errorf("不支持的操作系统: %s", runtime.GOOS)
+	}
+}
+
 
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {

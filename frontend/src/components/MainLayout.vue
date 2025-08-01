@@ -132,6 +132,7 @@ import HtmlRunner from './tools/HtmlRunner.vue'
 import JsRunner from './tools/JsRunner.vue'
 import JwtTool from './tools/JwtTool.vue'
 import AboutTool from './tools/AboutTool.vue'
+import ClipboardTool from './tools/ClipboardTool.vue'
 import { menuItems } from '../config/menuConfig'
 
 // 主题和菜单状态
@@ -167,11 +168,12 @@ const toolComponents = {
   htmlrunner: HtmlRunner,
   jsrunner: JsRunner,
   jwt: JwtTool,
-  about: AboutTool
+  about: AboutTool,
+  clipboard: ClipboardTool
 }
 
 // 标签页管理
-const openTabs = ref([])
+const openTabs = shallowRef([])
 const activeTab = ref('')
 
 // 右键菜单相关
@@ -226,7 +228,9 @@ const handleMenuItemClick = (tool) => {
   // 检查是否是彩蛋标签页，如果是则移除
   const easterEggTabIndex = openTabs.value.findIndex(tab => tab.id === 'easter-egg')
   if (easterEggTabIndex !== -1) {
-    openTabs.value.splice(easterEggTabIndex, 1)
+    const newTabs = [...openTabs.value]
+    newTabs.splice(easterEggTabIndex, 1)
+    openTabs.value = newTabs
   }
   
   // 检查标签页是否已存在
@@ -243,7 +247,7 @@ const handleMenuItemClick = (tool) => {
       tool: tool,
       pinned: false // 默认不固定
     }
-    openTabs.value.push(newTab)
+    openTabs.value = [...openTabs.value, newTab]
   }
   
   // 激活标签页
@@ -263,10 +267,13 @@ const handleMenuItemClick = (tool) => {
 
 // 切换标签页固定状态
 const togglePinTab = (tabId) => {
-  const tab = openTabs.value.find(tab => tab.id === tabId)
-  if (tab) {
-    tab.pinned = !tab.pinned
-  }
+  const newTabs = openTabs.value.map(tab => {
+    if (tab.id === tabId) {
+      return { ...tab, pinned: !tab.pinned }
+    }
+    return tab
+  })
+  openTabs.value = newTabs
 }
 
 // 显示右键菜单
@@ -291,19 +298,20 @@ const closeRightTabs = () => {
   const tabIndex = openTabs.value.findIndex(tab => tab.id === contextMenuTabId.value)
   if (tabIndex !== -1) {
     // 保留左侧和当前标签页，过滤掉右侧标签页（固定标签页除外）
-    openTabs.value = openTabs.value.filter((tab, index) => {
+    const newTabs = openTabs.value.filter((tab, index) => {
       if (index <= tabIndex) return true
       if (tab.pinned) return true
       return false
     })
+    openTabs.value = newTabs
     
     // 如果当前激活的标签页被关闭了，激活最后一个标签页
-    if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
-      activeTab.value = openTabs.value[openTabs.value.length - 1]?.id || ''
+    if (!newTabs.some(tab => tab.id === activeTab.value)) {
+      activeTab.value = newTabs[newTabs.length - 1]?.id || ''
     }
     
     // 如果没有标签页了，添加默认标签页
-    if (openTabs.value.length === 0) {
+    if (newTabs.length === 0) {
       const defaultTool = menuData[0].items[0]
       handleMenuItemClick(defaultTool)
     }
@@ -315,19 +323,20 @@ const closeLeftTabs = () => {
   const tabIndex = openTabs.value.findIndex(tab => tab.id === contextMenuTabId.value)
   if (tabIndex !== -1) {
     // 保留右侧和当前标签页，过滤掉左侧标签页（固定标签页除外）
-    openTabs.value = openTabs.value.filter((tab, index) => {
+    const newTabs = openTabs.value.filter((tab, index) => {
       if (index >= tabIndex) return true
       if (tab.pinned) return true
       return false
     })
+    openTabs.value = newTabs
     
     // 如果当前激活的标签页被关闭了，激活第一个标签页
-    if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
-      activeTab.value = openTabs.value[0]?.id || ''
+    if (!newTabs.some(tab => tab.id === activeTab.value)) {
+      activeTab.value = newTabs[0]?.id || ''
     }
     
     // 如果没有标签页了，添加默认标签页
-    if (openTabs.value.length === 0) {
+    if (newTabs.length === 0) {
       const defaultTool = menuData[0].items[0]
       handleMenuItemClick(defaultTool)
     }
@@ -337,14 +346,15 @@ const closeLeftTabs = () => {
 // 关闭其他标签页
 const closeOtherTabs = () => {
   // 只保留当前标签页和固定标签页
-  openTabs.value = openTabs.value.filter(tab => {
+  const newTabs = openTabs.value.filter(tab => {
     if (tab.id === contextMenuTabId.value) return true
     if (tab.pinned) return true
     return false
   })
+  openTabs.value = newTabs
   
   // 如果当前激活的标签页被关闭了，激活右键点击的标签页
-  if (!openTabs.value.some(tab => tab.id === activeTab.value)) {
+  if (!newTabs.some(tab => tab.id === activeTab.value)) {
     activeTab.value = contextMenuTabId.value
   }
 }
@@ -352,15 +362,16 @@ const closeOtherTabs = () => {
 // 关闭所有标签页
 const closeAllTabs = () => {
   // 只保留固定标签页
-  openTabs.value = openTabs.value.filter(tab => tab.pinned)
+  const newTabs = openTabs.value.filter(tab => tab.pinned)
+  openTabs.value = newTabs
   
   // 如果没有标签页了，添加默认标签页
-  if (openTabs.value.length === 0) {
+  if (newTabs.length === 0) {
     const defaultTool = menuData[0].items[0]
     handleMenuItemClick(defaultTool)
   } else {
     // 激活第一个标签页
-    activeTab.value = openTabs.value[0].id
+    activeTab.value = newTabs[0].id
   }
 }
 
@@ -400,10 +411,11 @@ const removeTab = (targetName) => {
   }
   
   activeTab.value = activeName
-  openTabs.value = tabs.filter(tab => tab.id !== targetName)
+  const newTabs = tabs.filter(tab => tab.id !== targetName)
+  openTabs.value = newTabs
   
   // 如果没有标签页了，显示默认工具而不是彩蛋
-  if (openTabs.value.length === 0) {
+  if (newTabs.length === 0) {
     const defaultTool = menuData[0].items[0]
     handleMenuItemClick(defaultTool)
   }
@@ -435,7 +447,8 @@ const showEasterEgg = () => {
     pinned: false
   }
   
-  openTabs.value.push(easterEggTab)
+  const newTabs = [...openTabs.value, easterEggTab]
+  openTabs.value = newTabs
   activeTab.value = 'easter-egg'
 }
 
