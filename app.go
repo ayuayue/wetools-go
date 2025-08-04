@@ -820,3 +820,4 @@ func (a *App) OpenURL(url string) error {
 	// 注意：这将在默认浏览器中打开URL，而不是在应用内嵌入
 	return nil
 }
+
