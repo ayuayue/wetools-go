@@ -28,6 +28,45 @@
         </div>
       </div>
       
+      <!-- 添加颜色模式选择 -->
+      <div class="options-section">
+        <div class="form-group">
+          <label class="form-label">转换模式:</label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input 
+                type="radio" 
+                v-model="colorMode" 
+                value="mono" 
+                class="radio-input"
+              />
+              <span class="radio-label">单色</span>
+            </label>
+            <label class="radio-item">
+              <input 
+                type="radio" 
+                v-model="colorMode" 
+                value="color" 
+                class="radio-input"
+              />
+              <span class="radio-label">彩色</span>
+            </label>
+          </div>
+        </div>
+        
+        <!-- 彩色模式参数 -->
+        <div v-if="colorMode === 'color'" class="form-group">
+          <label class="form-label">颜色层数 (2-10):</label>
+          <input 
+            type="number" 
+            v-model.number="colorSteps" 
+            min="2" 
+            max="10" 
+            class="form-input"
+          />
+        </div>
+      </div>
+      
       <div class="controls-section">
         <button 
           class="btn btn-primary" 
@@ -76,6 +115,7 @@
 <script>
 import ToolHeader from '../ToolHeader.vue'
 import potrace from 'potrace'
+import { Buffer } from 'buffer'
 
 export default {
   name: 'ImageToSvgTool',
@@ -88,7 +128,9 @@ export default {
       previewUrl: null,
       svgResult: null,
       isConverting: false,
-      error: null
+      error: null,
+      colorMode: 'color', // 默认使用彩色模式
+      colorSteps: 5 // 默认颜色层数
     }
   },
   methods: {
@@ -151,33 +193,20 @@ export default {
       this.svgResult = null
       
       try {
-        // 使用potrace库直接在前端进行转换
+        // 读取文件内容并转换为base64
         const arrayBuffer = await this.selectedFile.arrayBuffer()
-        const uint8Array = new Uint8Array(arrayBuffer)
+        const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
         
-        // 配置potrace参数
-        const params = {
-          threshold: 128, // 0-255, 调整此值以获得更好的效果
-          color: '#000000', // 填充颜色
-          background: '#FFFFFF', // 背景颜色
-          turdSize: 2, // 噪点阈值
-          alphaMax: 1, // 角点简化阈值
-          optTolerance: 0.2, // 曲线优化容差
-          turnPolicy: potrace.TurnPolicy.MINORITY
+        // 调用Go后端方法进行转换
+        const request = {
+          imageData: base64Data,
+          colorMode: this.colorMode,
+          colorSteps: this.colorSteps
         }
         
-        // 使用potrace进行转换
-        const svg = await new Promise((resolve, reject) => {
-          potrace.trace(uint8Array, params, (err, svg) => {
-            if (err) {
-              reject(err)
-            } else {
-              resolve(svg)
-            }
-          })
-        })
-        
-        this.svgResult = svg
+        // 使用Wails绑定调用后端方法
+        const result = await window.go.main.App.ImageToSvg(request)
+        this.svgResult = result.Svg
       } catch (err) {
         this.error = '转换失败: ' + err.message
       } finally {

@@ -104,6 +104,20 @@ export const menuItems = [
     ]
   },
   {
+    id: 'image',
+    title: '图片处理',
+    icon: 'fas fa-image',
+    collapsed: false,
+    items: [
+      {
+        id: 'image-to-svg',
+        title: '图片转SVG',
+        type: 'imagetosvg',
+        icon: 'fas fa-file-image'
+      }
+    ]
+  },
+  {
     id: 'websites',
     title: '网站集成',
     icon: 'fas fa-globe',

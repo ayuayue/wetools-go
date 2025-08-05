@@ -38,8 +38,8 @@ export function GetProxyURL() {
   return window['go']['main']['App']['GetProxyURL']();
 }
 
-export function Greet(arg1) {
-  return window['go']['main']['App']['Greet'](arg1);
+export function ImageToSvg(arg1) {
+  return window['go']['main']['App']['ImageToSvg'](arg1);
 }
 
 export function IsAutoStartEnabled() {

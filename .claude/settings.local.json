@@ -40,7 +40,14 @@
       "Bash(go list:*)",
       "Bash(cat:*)",
       "Bash(go clean:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(npm search potrace)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(npx potrace --help)",
+      "Bash(npx potrace)",
+      "Bash(node test-potrace.js)",
+      "Bash(node test-potrace.mjs)",
+      "Bash(go test ./...)"
     ],
     "deny": []
   }

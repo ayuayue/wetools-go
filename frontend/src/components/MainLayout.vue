@@ -150,6 +150,8 @@ provide('theme', theme)
 const menuData = reactive(JSON.parse(JSON.stringify(menuItems)))
 
 // 工具组件映射
+import ImageToSvgTool from './tools/ImageToSvgTool.vue'
+
 const toolComponents = {
   json: JsonTool,
   xml: XmlTool,
@@ -169,7 +171,8 @@ const toolComponents = {
   jsrunner: JsRunner,
   jwt: JwtTool,
   about: AboutTool,
-  clipboard: ClipboardTool
+  clipboard: ClipboardTool,
+  imagetosvg: ImageToSvgTool
 }
 
 // 标签页管理

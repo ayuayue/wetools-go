@@ -1,4 +1,4 @@
-export namespace main {
+export namespace clipboard {
 	
 	export class ClipboardItem {
 	    content: string;
@@ -14,7 +14,45 @@ export namespace main {
 	        this.timestamp = source["timestamp"];
 	    }
 	}
-	export class ProxyConfig {
+
+}
+
+export namespace image {
+	
+	export class ImageToSvgRequest {
+	    imageData: string;
+	    colorMode: string;
+	    colorSteps: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageToSvgRequest(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.imageData = source["imageData"];
+	        this.colorMode = source["colorMode"];
+	        this.colorSteps = source["colorSteps"];
+	    }
+	}
+	export class ImageToSvgResponse {
+	    svg: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageToSvgResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.svg = source["svg"];
+	    }
+	}
+
+}
+
+export namespace proxy {
+	
+	export class Config {
 	    enabled: boolean;
 	    host: string;
 	    port: string;
@@ -22,7 +60,7 @@ export namespace main {
 	    password: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new ProxyConfig(source);
+	        return new Config(source);
 	    }
 	
 	    constructor(source: any = {}) {
